@@ -25,8 +25,8 @@ steps:
   settings:
     repo: dgrechka/chat-bot
     dry_run: true
-    context: /ChatBot
-    dockerfile: /ChatBot/Dockerfile
+    context: ChatBot
+    dockerfile: ChatBot/Dockerfile
 - name: build & push docker image (main)
   image: plugins/docker
   when:
@@ -41,8 +41,8 @@ steps:
     password:
       from_secret: docker_hub_pass
     repo: dgrechka/chat-bot
-    context: /ChatBot
-    dockerfile: /ChatBot/Dockerfile
+    context: ChatBot
+    dockerfile: ChatBot/Dockerfile
     auto_tag: true
     force_tag: true
 - name: build & push docker image (tag)
@@ -55,8 +55,8 @@ steps:
       from_secret: docker_hub_username
     password:
       from_secret: docker_hub_pass
-    context: /ChatBot
-    dockerfile: /ChatBot/Dockerfile
+    context: ChatBot
+    dockerfile: ChatBot/Dockerfile
     repo: dgrechka/chat-bot
     auto_tag: true
     force_tag: true
