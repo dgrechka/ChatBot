@@ -16,12 +16,8 @@ steps:
 - name: build docker image (PRs + branches)
   image: plugins/docker
   when:
-    branch:
-      exclude:
-      - main
     event:
     - pull_request
-    - push
   settings:
     repo: dgrechka/chat-bot
     dry_run: true
