@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using ChatBot.Chats;
+using ChatBot.Interfaces;
+using ChatBot.LLMs;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -26,6 +29,8 @@ namespace ChatBot
 
             ILogger logger = loggerFactory.CreateLogger<Program>();
 
+            logger.LogInformation("Environment: {0}", env.EnvironmentName);
+
             IConfiguration config = builder.Configuration.GetRequiredSection("Settings");
             Settings? settings = config.Get<Settings>();
             if (settings == null)
@@ -34,9 +39,55 @@ namespace ChatBot
                 Environment.Exit(1);
             }
 
+            if (settings.TelegramBot != null) {
+                if(string.IsNullOrWhiteSpace(settings.TelegramBot.AccessToken))
+                {
+                    logger.LogCritical("Telegram bot access token is not set");
+                    Environment.Exit(1);
+                }
+
+                builder.Services
+                    .AddSingleton(settings.TelegramBot)
+                    .AddHostedService<TelegramBot>();
+                logger.LogInformation("Telegram bot is enabled");
+            }
+
+            if (settings.Persona?.InlineConfig != null)
+            {
+                builder.Services
+                    .AddSingleton(settings.Persona.InlineConfig)
+                    .AddSingleton<ILLMConfigFactory, LLMConfigFactoryInline>();
+                
+                logger.LogInformation("Persona configuration is enabled");
+            }
+
+            if (settings.LLM?.HuggingFace != null)
+            {
+                if(string.IsNullOrWhiteSpace(settings.LLM.HuggingFace.ApiKey))
+                {
+                    logger.LogCritical("HuggingFace API key is not set");
+                    Environment.Exit(1);
+                }
+
+                if (settings.LLM.HuggingFace.ModelName == "Meta-Llama-3-8B-Instruct") {
+                    builder.Services
+                        .AddSingleton<ILLM, Llama3_8B>((p) => new Llama3_8B(settings.LLM.HuggingFace.ApiKey));
+                    logger.LogInformation("HuggingFace Llama3_8B is enabled");
+                } else
+                {
+                    logger.LogCritical("Unsupported HuggingFace model name: {0}", settings.LLM.HuggingFace.ModelName);
+                    Environment.Exit(1);
+                }
+            }
+
+            builder.Services.AddSingleton<IChatHistory, MemoryChatHistory>();
+            logger.LogInformation("In-memory chat history is enabled");
+
             using IHost host = builder.Build();
 
             await host.RunAsync();
+
+            logger.LogInformation("Graceful shutdown complete. See you!");
         }
     }
 }

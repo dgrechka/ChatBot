@@ -13,7 +13,7 @@ namespace ChatBot.LLMs
         string UserSpecificPrompt { get;}
     }
 
-    public class PromptConfig
+    public class PromptConfig : IPromptConfig
     {
         public string BotPersonaSpecificPrompt { get; set; }
 

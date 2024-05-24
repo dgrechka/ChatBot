@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace ChatBot.LLMs
 {
-    internal interface ILLMConfigFactory
+    public  interface ILLMConfigFactory
     {
-        Task<PromptConfig> CreateLLMConfig(Consumer consumer);
+        Task<PromptConfig> CreateLLMConfig(Chat chat);
     }
 }

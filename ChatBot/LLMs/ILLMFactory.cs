@@ -9,6 +9,6 @@ namespace ChatBot.LLMs
 
     public interface ILLMFactory
     {
-        public Task<ILLM> CreateLLM(Consumer consumer);
+        public Task<ILLM> CreateLLM(Chat consumer);
     }
 }
