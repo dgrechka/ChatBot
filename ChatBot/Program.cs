@@ -80,8 +80,19 @@ namespace ChatBot
                 }
             }
 
-            builder.Services.AddSingleton<IChatHistory, MemoryChatHistory>();
-            logger.LogInformation("In-memory chat history is enabled");
+            if(settings.ChatHistoryStorage?.Postgres != null)
+            {
+                builder.Services
+                    .AddSingleton(settings.ChatHistoryStorage.Postgres)
+                    .AddSingleton<IChatHistory, PostgresChatHistory>();
+                logger.LogInformation("Postgres chat history is enabled");
+            } else
+            {
+                builder.Services.AddSingleton<IChatHistory, MemoryChatHistory>();
+                logger.LogWarning("Chat history storage is not configured, using in-memory storage");
+
+            }
+
 
             using IHost host = builder.Build();
 

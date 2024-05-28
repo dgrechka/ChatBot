@@ -12,7 +12,7 @@ namespace ChatBot.Chats
     {
         private readonly Dictionary<Chat, LinkedList<Message>> _storage = new Dictionary<Chat, LinkedList<Message>>();
 
-        public Task<IEnumerable<Message>> GetMessages(Chat chat)
+        public Task<IEnumerable<Message>> GetMessages(Chat chat, CancellationToken cancellationToken)
         {
             if (_storage.ContainsKey(chat))
             {
@@ -24,7 +24,7 @@ namespace ChatBot.Chats
             }
         }
 
-        public Task LogMessage(Chat chat, Message message)
+        public Task LogMessages(Chat chat, IEnumerable<Message> newMessages, CancellationToken cancellationToken)
         {
             LinkedList<Message> messages;
             if (!_storage.TryGetValue(chat, out messages)) { 
@@ -32,11 +32,15 @@ namespace ChatBot.Chats
                 _storage.Add(chat, messages);
             }
 
-            messages.AddLast(message);
-            if(messages.Count > 10)
+            foreach (var message in newMessages)
             {
-                messages.RemoveFirst();
+                messages.AddLast(message);
+                if (messages.Count > 10)
+                {
+                    messages.RemoveFirst();
+                }
             }
+
             return Task.CompletedTask;
         }
     }
