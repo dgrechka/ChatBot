@@ -17,7 +17,8 @@ namespace ChatBot.Chats
         private bool _initialized = false;
         private SemaphoreSlim _initSem = new SemaphoreSlim(1);
 
-        private async Task EnsureInitialized(CancellationToken token) {
+        private async Task EnsureInitialized(CancellationToken token)
+        {
             await _initSem.WaitAsync();
             try
             {
@@ -29,20 +30,20 @@ namespace ChatBot.Chats
                     await connection.OpenAsync(token);
                     using var command = connection.CreateCommand();
                     command.CommandText = @"
-                        CREATE TABLE IF NOT EXISTS MessageHistory (
-                            Id SERIAL PRIMARY KEY,
-                            ChatId TEXT NOT NULL,
-                            Timestamp TIMESTAMP NOT NULL,
-                            Sender TEXT NOT NULL,
-                            Content TEXT NOT NULL
-                        );
-                    ";
+                            CREATE TABLE IF NOT EXISTS MessageHistory (
+                                Id SERIAL PRIMARY KEY,
+                                ChatId TEXT NOT NULL,
+                                Timestamp TIMESTAMPTZ NOT NULL,
+                                Sender TEXT NOT NULL,
+                                Content TEXT NOT NULL
+                            );
+                        ";
                     await command.ExecuteNonQueryAsync(token);
 
                     // add index on ChatId, Timestamp
                     command.CommandText = @"
-                        CREATE INDEX IF NOT EXISTS ChatId_Timestamp_Index
-                        ON MessageHistory (ChatId, Timestamp)";
+                            CREATE INDEX IF NOT EXISTS ChatId_Timestamp_Index
+                            ON MessageHistory (ChatId, Timestamp)";
                     await command.ExecuteNonQueryAsync(token);
                     _initialized = true;
                 }
@@ -69,12 +70,12 @@ namespace ChatBot.Chats
             await connection.OpenAsync(cancellationToken);
             using var command = connection.CreateCommand();
             command.CommandText = @"
-                SELECT Timestamp, Sender, Content
-                FROM MessageHistory
-                WHERE ChatId = @ChatId
-                ORDER BY Timestamp DESC
-                LIMIT 10;
-            ";
+                    SELECT Timestamp, Sender, Content
+                    FROM MessageHistory
+                    WHERE ChatId = @ChatId
+                    ORDER BY Timestamp DESC
+                    LIMIT 10;
+                ";
             command.Parameters.AddWithValue("ChatId", chat.ToString());
             using var reader = await command.ExecuteReaderAsync(cancellationToken);
             var messages = new List<Message>();
@@ -94,10 +95,11 @@ namespace ChatBot.Chats
                 {
                     _logger.LogWarning("Failed to parse message author: {0}", e.Message);
                 }
-
-                // sorting messages in ascending order
-                messages.Reverse();
             }
+
+            // sorting messages in ascending order
+            messages.Reverse();
+
             return messages;
         }
 
@@ -112,9 +114,9 @@ namespace ChatBot.Chats
             {
                 using var command = connection.CreateCommand();
                 command.CommandText = @"
-                    INSERT INTO MessageHistory (ChatId, Timestamp, Sender, Content)
-                    VALUES (@ChatId, @Timestamp, @Sender, @Content);
-                ";
+                        INSERT INTO MessageHistory (ChatId, Timestamp, Sender, Content)
+                        VALUES (@ChatId, @Timestamp, @Sender, @Content);
+                    ";
                 command.Parameters.AddWithValue("ChatId", chat.ToString());
                 command.Parameters.AddWithValue("Timestamp", message.Timestamp);
                 command.Parameters.AddWithValue("Sender", message.Author.ToString());
