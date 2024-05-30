@@ -20,6 +20,7 @@ steps:
     - pull_request
   settings:
     repo: ghcr.io/dgrechka/chatbot
+    registry: ghcr.io
     dry_run: true
     context: ChatBot
     dockerfile: ChatBot/Dockerfile
@@ -36,6 +37,7 @@ steps:
     password:
       from_secret: dgrechka_ghcr_pat
     repo: ghcr.io/dgrechka/chatbot
+    registry: ghcr.io
     context: ChatBot
     dockerfile: ChatBot/Dockerfile
     auto_tag: true
@@ -50,6 +52,7 @@ steps:
     password:
       from_secret: dgrechka_ghcr_pat
     repo: ghcr.io/dgrechka/chatbot
+    registry: ghcr.io
     context: ChatBot
     dockerfile: ChatBot/Dockerfile
     auto_tag: true
