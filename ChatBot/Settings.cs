@@ -14,6 +14,13 @@ namespace ChatBot
         public PersonaConfig? Persona { get; set; }
 
         public LLMConfig? LLM { get; set; }
+
+        public ChatHistoryStorageConfig? ChatHistoryStorage { get; set; }
+    }
+
+    public class ChatHistoryStorageConfig
+    {
+        public PostgresChatHistoryConfig? Postgres { get; set; }
     }
 
     public class LLMConfig { 
@@ -44,5 +51,14 @@ namespace ChatBot
         public string? UnknownUserPrompt { get; set; }
 
         public Dictionary<string, string> KnownUsersPrompts { get; set; }
+    }
+
+    public class PostgresChatHistoryConfig
+    {
+        public string Host { get; set; }
+        public string Database { get; set; }
+        public string Username { get; set; }
+        public string Password { get; set; }
+        public int Port { get; set; }
     }
 }

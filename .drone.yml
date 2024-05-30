@@ -19,7 +19,7 @@ steps:
     event:
     - pull_request
   settings:
-    repo: dgrechka/chat-bot
+    repo: ghcr.io/dgrechka/chatbot
     dry_run: true
     context: ChatBot
     dockerfile: ChatBot/Dockerfile
@@ -34,8 +34,8 @@ steps:
   settings:
     username: dgrechka
     password:
-      from_secret: docker_hub_dgrechka_token
-    repo: dgrechka/chat-bot
+      from_secret: dgrechka_ghcr_pat
+    repo: ghcr.io/dgrechka/chatbot
     context: ChatBot
     dockerfile: ChatBot/Dockerfile
     auto_tag: true
@@ -48,9 +48,9 @@ steps:
   settings:
     username: dgrechka
     password:
-      from_secret: docker_hub_dgrechka_token
+      from_secret: dgrechka_ghcr_pat
+    repo: ghcr.io/dgrechka/chatbot
     context: ChatBot
     dockerfile: ChatBot/Dockerfile
-    repo: dgrechka/chat-bot
     auto_tag: true
     force_tag: true

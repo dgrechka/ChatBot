@@ -13,8 +13,8 @@ using Telegram.Bot.Requests;
 namespace ChatBot.Interfaces
 {
     public interface IChatHistory {
-        Task<IEnumerable<Message>> GetMessages(Chat chat);
-        Task LogMessage(Chat chat, Message message);
+        Task<IEnumerable<Message>> GetMessages(Chat chat, CancellationToken cancellationToken);
+        Task LogMessages(Chat chat, IEnumerable<Message> messages, CancellationToken cancellationToken);
     }
 
     public class TelegramBot : IHostedService
@@ -43,7 +43,7 @@ namespace ChatBot.Interfaces
             _llmConfigFactory = lLMConfigFactory;
         }
 
-        private async Task<int> ProcessUpdate(Telegram.Bot.Types.Update update)
+        private async Task<int> ProcessUpdate(Telegram.Bot.Types.Update update, CancellationToken cancellationToken)
         {
             var now = DateTime.UtcNow;
 
@@ -56,7 +56,7 @@ namespace ChatBot.Interfaces
 
             var chat = new Chat("Telegram", update.Message.Chat.Id.ToString());
 
-            var prevMessagesTask = _chatHistory.GetMessages(chat);
+            var prevMessagesTask = _chatHistory.GetMessages(chat, cancellationToken);
 
             var promptConfig = await _llmConfigFactory.CreateLLMConfig(chat);
 
@@ -82,16 +82,21 @@ namespace ChatBot.Interfaces
             _logger?.LogInformation($"Sending response to {update.Message.Chat.Id}: {response}");
             var sent = await _bot.SendTextMessageAsync(update.Message.Chat.Id, response);
 
+            now = DateTime.UtcNow;
+
             if (sent != null)
             {
-                await _chatHistory.LogMessage(chat, userMessage);
-                await _chatHistory.LogMessage(chat, new Message
-                {
-                    Timestamp = now,
-                    Author = Author.Bot,
-                    Content = response
-                });
-                _logger?.LogInformation($"Saved conversation turn");
+                // intentionally not awaiting for faster return
+                _ = _chatHistory.LogMessages(chat, new Message[] {
+                    userMessage,
+                    new Message
+                    {
+                        Timestamp = now,
+                        Author = Author.Bot,
+                        Content = response
+                    }}, cancellationToken);
+
+                _logger?.LogInformation($"Submitted conv turn for persisting");
             }
 
             return update.Id + 1;
@@ -104,14 +109,18 @@ namespace ChatBot.Interfaces
                 try
                 {
                     var updates = await _bot.GetUpdatesAsync(offset, cancellationToken: cancellationToken);
-                    var offsets = await Task.WhenAll(updates.Select(ProcessUpdate));
+                    var offsets = await Task.WhenAll(updates.Select(u => ProcessUpdate(u, cancellationToken)));
                     if (offsets.Length != 0)
                     {
                         offset = offsets.Max();
                         _logger?.LogInformation($"Processed updates up to {offset}");
                     }
-
-                } catch(Exception e)
+                }
+                catch (OperationCanceledException) {
+                    _logger?.LogInformation("Cancellation requested, stopping...");
+                    break;
+                }
+                catch (Exception e)
                 {
                     _logger?.LogError(e, "Error while getting updates");
                 }
