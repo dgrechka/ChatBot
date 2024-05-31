@@ -1,8 +1,7 @@
 using Moq;
-using Constants;
-using LLMs = ChatBot.LLMs;
+using HF = ChatBot.LLMs.HuggingFace;
 
-namespace LLMs
+namespace HuggingFace
 {
     public class Llama3_8B
     {
@@ -19,9 +18,10 @@ namespace LLMs
 
         [Fact]
         [Trait(Attributes.TestCategory, Attributes.IntegrationTestCategory)]
+        [Trait(Attributes.RequiresApiKeys,"true")]
         public async Task ResponseGenerated()
         {
-            using ChatBot.LLMs.Llama3_8B llama3_8B = new ChatBot.LLMs.Llama3_8B(_huggingFaceToken);
+            using HF.Llama3_8B llama3_8B = new HF.Llama3_8B(_huggingFaceToken);
 
             var configMock = new Mock<ChatBot.LLMs.IPromptConfig>();
             configMock.SetupGet(x => x.BotPersonaSpecificPrompt).Returns("My name is Donald.");
@@ -40,9 +40,10 @@ namespace LLMs
 
         [Fact]
         [Trait(Attributes.TestCategory, Attributes.IntegrationTestCategory)]
+        [Trait(Attributes.RequiresApiKeys, "true")]
         public async Task PriorMessageIsInContext()
         {
-            using ChatBot.LLMs.Llama3_8B llama3_8B = new ChatBot.LLMs.Llama3_8B(_huggingFaceToken);
+            using HF.Llama3_8B llama3_8B = new HF.Llama3_8B(_huggingFaceToken);
 
             var configMock = new Mock<ChatBot.LLMs.IPromptConfig>();
             configMock.SetupGet(x => x.BotPersonaSpecificPrompt).Returns("My name is Donald.");

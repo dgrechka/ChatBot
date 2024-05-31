@@ -25,12 +25,20 @@ namespace ChatBot
 
     public class LLMConfig { 
         public HuggingFaceLLMConfig? HuggingFace { get; set; }
+        public DeepInfraLLMConfig? DeepInfra { get; set; }
     }
 
     public class HuggingFaceLLMConfig
     {
         public string ModelName { get; set; }
         public string ApiKey { get; set; }
+    }
+
+    public class DeepInfraLLMConfig
+    {
+        public string ModelName { get; set; }
+        public string ApiKey { get; set; }
+        public int MaxTokensToGenerate { get; set; } = 512;
     }
 
     public class TelegramBotSettings

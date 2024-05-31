@@ -4,12 +4,23 @@ type: kubernetes
 name: default
 
 steps:
-- name: build & test
+- name: build & test (without LLM integraion)
   image: mcr.microsoft.com/dotnet/sdk:8.0
+  when:
+    event: [pull_request]
+  commands:
+  - dotnet build
+  - dotnet test --logger "console;verbosity=detailed" --filter RequiresApiKeys!=true
+- name: build & test (with LLM integraion)
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  when:
+    branch: [main]
+    event: [push, tag]
   environment:
     HUGGING_FACE_TOKEN:
       from_secret: hugging_face_token
-
+    DEEPINFRA_APIKEY:
+      from_secret: deepinfra_apikey
   commands:
   - dotnet build
   - dotnet test --logger "console;verbosity=detailed"
