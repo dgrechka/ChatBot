@@ -12,7 +12,11 @@ namespace ChatBot.LLMs
 
         string UserSpecificPrompt { get;}
 
+        bool IncludeMessageTimestamps { get; }
+
         Chat Chat { get; }
+
+        DateTime? CurrentTime { get; }
     }
 
     public class PromptConfig : IPromptConfig
@@ -22,5 +26,9 @@ namespace ChatBot.LLMs
         public string UserSpecificPrompt { get; set; }
 
         public Chat Chat { get; set; }
+
+        public bool IncludeMessageTimestamps { get; set; }
+
+        public DateTime? CurrentTime => IncludeMessageTimestamps ? DateTime.UtcNow : null;
     }
 }

@@ -58,9 +58,20 @@ namespace ChatBot
             {
                 builder.Services
                     .AddSingleton(settings.Persona.InlineConfig)
-                    .AddSingleton<ILLMConfigFactory, LLMConfigFactoryInline>();
+                    .AddSingleton<ILLMConfigFactory, LLMConfigFactoryInline>(p => new LLMConfigFactoryInline(
+                        p.GetRequiredService<ILogger<LLMConfigFactoryInline>>(),
+                        p.GetRequiredService<InlinePersonaConfig>(),
+                        settings.Persona.UseMessageTimestamps ?? false
+                        ));
                 
                 logger.LogInformation("Persona configuration is enabled");
+                if (settings.Persona.UseMessageTimestamps == true)
+                {
+                    logger.LogInformation("Message timestamps are enabled");
+                }
+                else {
+                    logger.LogInformation("Message timestamps are disabled");
+                }
             }
 
             if (settings.LLM?.HuggingFace != null)
