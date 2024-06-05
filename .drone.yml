@@ -68,3 +68,8 @@ steps:
     dockerfile: ChatBot/Dockerfile
     auto_tag: true
     force_tag: true
+---
+kind: signature
+hmac: d52fe1cf5e7946701ec8df26e37f100a6f614053c27d2bf456b29db71717684d
+
+...

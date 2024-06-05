@@ -7,29 +7,26 @@ using System.Text;
 using System.Threading.Tasks;
 using Npgsql;
 using Microsoft.Extensions.Logging;
+using ChatBot.Persistence;
+using Newtonsoft.Json.Linq;
+using System.Data.Common;
 
 namespace ChatBot.Chats
 {
-    public class PostgresChatHistory : IChatHistory, IDisposable
+    public class PostgresChatHistory : PostgresBasedStorage, IChatHistory
     {
-        private readonly NpgsqlDataSource _dataSource;
+        private readonly PostgresConnection _postgres;
         private readonly ILogger<PostgresChatHistory> _logger;
         private bool _initialized = false;
         private SemaphoreSlim _initSem = new SemaphoreSlim(1);
 
-        private async Task EnsureInitialized(CancellationToken token)
+        protected override async Task InitializeCore(CancellationToken token)
         {
-            await _initSem.WaitAsync();
-            try
-            {
-                // create Message History table if it doesn't exist
-                if (!_initialized)
-                {
-                    _logger.LogInformation("Initializing PostgresChatHistory");
-                    using var connection = _dataSource.CreateConnection();
-                    await connection.OpenAsync(token);
-                    using var command = connection.CreateCommand();
-                    command.CommandText = @"
+            _logger.LogInformation("Initializing PostgresChatHistory");
+            using var connection = _postgres.DataSource.CreateConnection();
+            await connection.OpenAsync(token);
+            using var command = connection.CreateCommand();
+            command.CommandText = @"
                             CREATE TABLE IF NOT EXISTS MessageHistory (
                                 Id SERIAL PRIMARY KEY,
                                 ChatId TEXT NOT NULL,
@@ -38,35 +35,28 @@ namespace ChatBot.Chats
                                 Content TEXT NOT NULL
                             );
                         ";
-                    await command.ExecuteNonQueryAsync(token);
+            await command.ExecuteNonQueryAsync(token);
 
-                    // add index on ChatId, Timestamp
-                    command.CommandText = @"
+            // add index on ChatId, Timestamp
+            command.CommandText = @"
                             CREATE INDEX IF NOT EXISTS ChatId_Timestamp_Index
                             ON MessageHistory (ChatId, Timestamp)";
-                    await command.ExecuteNonQueryAsync(token);
-                    _initialized = true;
-                }
-            }
-            finally
-            {
-                _initSem.Release();
-            }
+            await command.ExecuteNonQueryAsync(token);
+            await connection.CloseAsync();
         }
 
-        public PostgresChatHistory(ILogger<PostgresChatHistory> logger, PostgresChatHistoryConfig config)
+        public PostgresChatHistory(ILogger<PostgresChatHistory> logger, PostgresConnection postgres)
+            : base(postgres)
         {
             _logger = logger;
-
-            var connectionString = $"Host={config.Host};Port={config.Port};Username={config.Username};Password={config.Password};Database={config.Database}";
-            _dataSource = NpgsqlDataSource.Create(connectionString);
+            _postgres = postgres;
         }
 
         public async Task<IEnumerable<Message>> GetMessages(Chat chat, CancellationToken cancellationToken)
         {
             await EnsureInitialized(cancellationToken);
 
-            using var connection = _dataSource.CreateConnection();
+            using var connection = _postgres.DataSource.CreateConnection();
             await connection.OpenAsync(cancellationToken);
             using var command = connection.CreateCommand();
             command.CommandText = @"
@@ -96,6 +86,7 @@ namespace ChatBot.Chats
                     _logger.LogWarning("Failed to parse message author: {0}", e.Message);
                 }
             }
+            await connection.CloseAsync();
 
             // sorting messages in ascending order
             messages.Reverse();
@@ -107,7 +98,7 @@ namespace ChatBot.Chats
         {
             await EnsureInitialized(cancellationToken);
 
-            using var connection = _dataSource.CreateConnection();
+            using var connection = _postgres.DataSource.CreateConnection();
             await connection.OpenAsync(cancellationToken);
             using var transaction = connection.BeginTransaction();
             foreach (var message in messages)
@@ -124,11 +115,7 @@ namespace ChatBot.Chats
                 await command.ExecuteNonQueryAsync(cancellationToken);
             }
             await transaction.CommitAsync(cancellationToken);
-        }
-
-        public void Dispose()
-        {
-            _dataSource.Dispose();
+            await connection.CloseAsync();
         }
     }
 }

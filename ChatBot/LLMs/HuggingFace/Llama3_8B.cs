@@ -33,13 +33,13 @@ namespace ChatBot.LLMs.HuggingFace
             };
         }
 
-        public async Task<string> GenerateResponseAsync(IPromptConfig config, IEnumerable<Message> messages)
+        public async Task<string> GenerateResponseAsync(IPromptConfig config, IEnumerable<Message> messages, CancellationToken cancellationToken)
         {
             var llmInput = Llama3.PrepareInput(config, messages);
 
             // do a POST request with llmInput.ToString() as the input
             JsonContent content = JsonContent.Create(new { inputs = llmInput });
-            HttpResponseMessage response = await _httpClient.PostAsync("meta-llama/Meta-Llama-3-8B-Instruct", content: content);
+            HttpResponseMessage response = await _httpClient.PostAsync("meta-llama/Meta-Llama-3-8B-Instruct", content: content, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
                 throw new Exception($"Failed to generate response: {response.ReasonPhrase}");
