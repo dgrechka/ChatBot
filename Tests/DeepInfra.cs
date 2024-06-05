@@ -21,7 +21,7 @@ namespace DeepInfra
         [Trait(Attributes.RequiresApiKeys,"true")]
         public async Task ResponseGenerated()
         {
-            using DI.Llama3Client llama3_8B = new DI.Llama3Client(null, _deepinfra_apikey, 32, DI.Llama3Flavor.Instruct_8B);
+            using DI.Llama3Client llama3_8B = new DI.Llama3Client(null, null, _deepinfra_apikey, 32, DI.Llama3Flavor.Instruct_8B);
 
             var configMock = new Mock<ChatBot.LLMs.IPromptConfig>();
             configMock.SetupGet(x => x.BotPersonaSpecificPrompt).Returns("My name is Donald.");
@@ -33,7 +33,7 @@ namespace DeepInfra
                 new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.User, Content = "Hello" },
                 new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.Bot, Content = "Hi" },
                 new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.User, Content = "What's your name?" }
-            });
+            }, CancellationToken.None);
 
             Assert.Equal("Donald", response);
         }
@@ -43,7 +43,7 @@ namespace DeepInfra
         [Trait(Attributes.RequiresApiKeys, "true")]
         public async Task PriorMessageIsInContext()
         {
-            using DI.Llama3Client llama3_8B = new DI.Llama3Client(null, _deepinfra_apikey, 32, DI.Llama3Flavor.Instruct_8B);
+            using DI.Llama3Client llama3_8B = new DI.Llama3Client(null, null, _deepinfra_apikey, 32, DI.Llama3Flavor.Instruct_8B);
 
             var configMock = new Mock<ChatBot.LLMs.IPromptConfig>();
             configMock.SetupGet(x => x.BotPersonaSpecificPrompt).Returns("My name is Donald.");
@@ -56,7 +56,7 @@ namespace DeepInfra
                 new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.User, Content = "The length of AB is 3241" },
                 new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.Bot, Content = "Ok" },
                 new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.User, Content = "What is the length of AB?" },
-            });
+            }, CancellationToken.None);
 
             Assert.Equal("3241", response);
         }

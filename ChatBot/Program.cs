@@ -1,6 +1,8 @@
-﻿using ChatBot.Chats;
+﻿using ChatBot.Billing;
+using ChatBot.Chats;
 using ChatBot.Interfaces;
 using ChatBot.LLMs;
+using ChatBot.Persistence;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -98,6 +100,7 @@ namespace ChatBot
                 builder.Services
                     .AddSingleton<ILLM, LLMs.DeepInfra.Llama3Client>((p) => new LLMs.DeepInfra.Llama3Client(
                         p.GetRequiredService<ILogger<LLMs.DeepInfra.Llama3Client>>(),
+                        p.GetRequiredService<IBillingLogger>(),
                         settings.LLM.DeepInfra.ApiKey,
                         settings.LLM.DeepInfra.MaxTokensToGenerate,
                         modelFlavor
@@ -106,11 +109,14 @@ namespace ChatBot
                 
             }
 
-            if (settings.ChatHistoryStorage?.Postgres != null)
+            if (settings.Persistence?.Postgres != null)
             {
                 builder.Services
-                    .AddSingleton(settings.ChatHistoryStorage.Postgres)
+                    .AddSingleton(settings.Persistence.Postgres)
+                    .AddSingleton<PostgresConnection>()
+                    .AddSingleton<IBillingLogger, PostgresBillingLogger>()
                     .AddSingleton<IChatHistory, PostgresChatHistory>();
+                logger.LogInformation("Postgres billing logging enabled");
                 logger.LogInformation("Postgres chat history is enabled");
             } else
             {

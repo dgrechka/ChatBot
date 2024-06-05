@@ -15,12 +15,12 @@ namespace ChatBot
 
         public LLMConfig? LLM { get; set; }
 
-        public ChatHistoryStorageConfig? ChatHistoryStorage { get; set; }
+        public PersistenceConfig? Persistence { get; set; }
     }
 
-    public class ChatHistoryStorageConfig
+    public class PersistenceConfig
     {
-        public PostgresChatHistoryConfig? Postgres { get; set; }
+        public PostgresConfig? Postgres { get; set; }
     }
 
     public class LLMConfig { 
@@ -61,7 +61,7 @@ namespace ChatBot
         public Dictionary<string, string> KnownUsersPrompts { get; set; }
     }
 
-    public class PostgresChatHistoryConfig
+    public class PostgresConfig
     {
         public string Host { get; set; }
         public string Database { get; set; }

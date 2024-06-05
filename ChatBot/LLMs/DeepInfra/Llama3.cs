@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using ChatBot.Billing;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,13 @@ namespace ChatBot.LLMs.DeepInfra
 
     public class Llama3Client : InferenceClient<Llama3Client.InferenceRequest, Llama3Client.InferenceResponse>, ILLM
     {
-        public Llama3Client(ILogger<Llama3Client>? logger, string apikey, int maxTokens, Llama3Flavor flavor = Llama3Flavor.Instruct_8B)
+        protected readonly IBillingLogger? _billingLogger;
+        public Llama3Client(
+            ILogger<Llama3Client>? logger,
+            IBillingLogger? billingLogger,
+            string apikey,
+            int maxTokens,
+            Llama3Flavor flavor = Llama3Flavor.Instruct_8B)
             : base(logger,new DeepInfraInferenceClientSettings() {
                 ApiKey = apikey,
                 MaxTokens = maxTokens,
@@ -24,6 +31,7 @@ namespace ChatBot.LLMs.DeepInfra
                 }
             })
         {
+            _billingLogger = billingLogger;
         }
 
         public class InferenceRequest
@@ -84,7 +92,7 @@ namespace ChatBot.LLMs.DeepInfra
 
         }
 
-        public async Task<string> GenerateResponseAsync(IPromptConfig config, IEnumerable<Message> messages)
+        public async Task<string> GenerateResponseAsync(IPromptConfig config, IEnumerable<Message> messages, CancellationToken cancellationToken)
         {
             var llmInput = Llama3.PrepareInput(config, messages);
 
@@ -94,8 +102,10 @@ namespace ChatBot.LLMs.DeepInfra
                 MaxNewTokens = _settings.MaxTokens,
             };
 
-            var response = await GenerateResponseAsync(request);
+            var response = await GenerateResponseAsync(request, cancellationToken);
             _logger?.LogInformation($"InputTokens: {response.Status.TokensInput}; OutputTokens: {response.Status.TokensGenerated}; Cost: {response.Status.Cost}; RuntimeMs: {response.Status.RuntimeMs}");
+
+            _billingLogger?.LogLLMCost(config.Chat.ToString(), "DeepInfra", _settings.ModelName, response.Status.TokensInput, response.Status.TokensGenerated, response.Status.Cost, "USD", cancellationToken);
 
             return response.Results[0].GeneratedText;
         }

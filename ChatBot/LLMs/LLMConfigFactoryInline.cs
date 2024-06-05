@@ -45,6 +45,8 @@ namespace ChatBot.LLMs
                 result.UserSpecificPrompt = userPrompt;
             }
 
+            result.Chat = chat;
+
             return Task.FromResult(result);
         }
     }

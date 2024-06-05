@@ -66,7 +66,7 @@ namespace ChatBot.Interfaces
             {
                 Timestamp = now,
                 Author = Author.User,
-                Content = update.Message.Text
+                Content = update.Message.Text ?? string.Empty
             };
 
             messages.Add(userMessage);
@@ -74,7 +74,7 @@ namespace ChatBot.Interfaces
             // send typing indicator
             var typingTask = _bot.SendChatActionAsync(update.Message.Chat.Id, Telegram.Bot.Types.Enums.ChatAction.Typing);
             var llmStart = Stopwatch.StartNew();
-            var response = await _llm.GenerateResponseAsync(promptConfig, messages);
+            var response = await _llm.GenerateResponseAsync(promptConfig, messages, cancellationToken);
             llmStart.Stop();
             _logger?.LogInformation($"LLM response time: {llmStart.ElapsedMilliseconds}ms");
 

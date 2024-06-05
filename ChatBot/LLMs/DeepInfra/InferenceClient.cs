@@ -8,14 +8,16 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Net.Http.Json;
 using System.Diagnostics;
+using ChatBot.Billing;
 
 namespace ChatBot.LLMs.DeepInfra
 {
     public abstract class InferenceClient<Request, Response> : IDisposable
     {
         private readonly HttpClient _httpClient;
-        protected readonly ILogger? _logger;
         private bool disposedValue;
+
+        protected readonly ILogger? _logger;
         protected readonly DeepInfraInferenceClientSettings _settings;
 
         public InferenceClient(ILogger? logger, DeepInfraInferenceClientSettings settings)
@@ -32,13 +34,13 @@ namespace ChatBot.LLMs.DeepInfra
             };
         }
 
-        public async Task<Response> GenerateResponseAsync(Request request)
+        public async Task<Response> GenerateResponseAsync(Request request, CancellationToken cancellationToken)
         {
             // do a POST request with request as the input
             JsonContent content = JsonContent.Create(request);
             _logger?.LogInformation($"DeepInfraInferenceClient[{_settings.ModelName}]: Sending request. {_settings.MaxTokens} max tokens to generate.");
             var sw = Stopwatch.StartNew();
-            HttpResponseMessage response = await _httpClient.PostAsync("", content: content);
+            HttpResponseMessage response = await _httpClient.PostAsync("", content: content, cancellationToken);
             sw.Stop();
             _logger?.LogInformation($"DeepInfraInferenceClient[{_settings.ModelName}]: Request took {sw.ElapsedMilliseconds}ms");
             if (!response.IsSuccessStatusCode)

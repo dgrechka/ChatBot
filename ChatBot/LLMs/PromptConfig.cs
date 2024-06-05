@@ -11,6 +11,8 @@ namespace ChatBot.LLMs
         string BotPersonaSpecificPrompt { get;}
 
         string UserSpecificPrompt { get;}
+
+        Chat Chat { get; }
     }
 
     public class PromptConfig : IPromptConfig
@@ -18,5 +20,7 @@ namespace ChatBot.LLMs
         public string BotPersonaSpecificPrompt { get; set; }
 
         public string UserSpecificPrompt { get; set; }
+
+        public Chat Chat { get; set; }
     }
 }

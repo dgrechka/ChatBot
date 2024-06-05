@@ -33,7 +33,7 @@ namespace HuggingFace
                 new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.User, Content = "Hello" },
                 new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.Bot, Content = "Hi" },
                 new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.User, Content = "What's your name?" }
-            });
+            }, CancellationToken.None);
 
             Assert.Equal("Donald", response);
         }
@@ -56,7 +56,7 @@ namespace HuggingFace
                 new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.User, Content = "The length of AB is 3241" },
                 new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.Bot, Content = "Ok" },
                 new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.User, Content = "What is the length of AB?" },
-            });
+            }, CancellationToken.None);
 
             Assert.Equal("3241", response);
         }
