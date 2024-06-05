@@ -50,6 +50,11 @@ namespace ChatBot
     {
         public InlinePersonaConfig? InlineConfig { get; set; }
 
+        /// <summary>
+        /// This adds a sense of time to LLM
+        /// </summary>
+        public bool? UseMessageTimestamps { get; set; }
+
         // TODO: add database support
     }
 
