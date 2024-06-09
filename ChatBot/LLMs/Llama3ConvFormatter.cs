@@ -11,10 +11,12 @@ namespace ChatBot.LLMs
     public class Llama3ConvFormatter : IConversationFormatter
     {
         private readonly bool _includeMessageTimestamps;
+        private readonly DateTime? _currentTime;
 
-        public Llama3ConvFormatter(bool includeMessageTimestamps)
+        public Llama3ConvFormatter(bool includeMessageTimestamps, DateTime? currentTime)
         {
             _includeMessageTimestamps = includeMessageTimestamps;
+            _currentTime = currentTime;
         }
 
         public string FormatConversation(IEnumerable<Message> messages, bool addResponsePrimer)
@@ -30,8 +32,7 @@ namespace ChatBot.LLMs
             // reply primer
             if (addResponsePrimer)
             {
-                // TODO: inject time?
-                llmInput.Append($"<|start_header_id|>assistant{FormatTimestamp(DateTime.UtcNow)}<|end_header_id|>\n\n");
+                llmInput.Append($"<|start_header_id|>assistant{FormatTimestamp(_currentTime)}<|end_header_id|>\n\n");
             }
 
             return llmInput.ToString();
@@ -46,7 +47,7 @@ namespace ChatBot.LLMs
         {
             if (timestamp.HasValue)
             {
-                return timestamp.Value.ToString("- yyyy-MM-dd HH:mm:ssZ ddd\n", CultureInfo.InvariantCulture);
+                return timestamp.Value.ToString(" - yyyy-MM-dd HH:mm:ssZ ddd", CultureInfo.InvariantCulture);
             }
             else
             {

@@ -79,15 +79,15 @@ namespace Prompt
             templateSourceMock.Setup(x => x.HasKey("fghi")).ReturnsAsync(true);
             templateSourceMock.Setup(x => x.HasKey("jkl")).ReturnsAsync(true);
 
-            templateSourceMock.Setup(x => x.GetValue("abc")).ReturnsAsync("Abc references [◄de►] and [◄fghi►].");
-            templateSourceMock.Setup(x => x.GetValue("de")).ReturnsAsync("De references |◄fghi►|.");
-            templateSourceMock.Setup(x => x.GetValue("fghi")).ReturnsAsync("Fghi references (◄jkl►).");
-            templateSourceMock.Setup(x => x.GetValue("jkl")).ReturnsAsync("Jkl references nothing.");
+            templateSourceMock.Setup(x => x.GetValue("abc", CancellationToken.None)).ReturnsAsync("Abc references [◄de►] and [◄fghi►].");
+            templateSourceMock.Setup(x => x.GetValue("de", CancellationToken.None)).ReturnsAsync("De references |◄fghi►|.");
+            templateSourceMock.Setup(x => x.GetValue("fghi", CancellationToken.None)).ReturnsAsync("Fghi references (◄jkl►).");
+            templateSourceMock.Setup(x => x.GetValue("jkl", CancellationToken.None)).ReturnsAsync("Jkl references nothing.");
 
 
             var compiler = new ChatBot.Prompt.Compiler(null, new List<ITemplateSource> {templateSourceMock.Object});
 
-            var result = await compiler.CompilePrompt("abc");
+            var result = await compiler.CompilePrompt("abc", CancellationToken.None);
 
             Assert.Equal("Abc references [De references |Fghi references (Jkl references nothing.).|.] and [Fghi references (Jkl references nothing.).].", result);
         }
