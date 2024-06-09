@@ -1,4 +1,6 @@
 ﻿using ChatBot.LLMs;
+using ChatBot.Prompt;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -21,26 +23,27 @@ namespace ChatBot.Interfaces
     {
         private readonly TelegramBotClient _bot;
         private readonly ILogger<TelegramBot>? _logger;
-        private readonly IChatHistory _chatHistory;
-        private readonly ILLMConfigFactory _llmConfigFactory;
         private readonly ILLM _llm;
+        private readonly IPromptCompiler _promptCompiler;
+        private readonly IChatHistory _chatHistory;
 
         private readonly CancellationTokenSource _shutdownCTS = new CancellationTokenSource();
         private readonly TaskCompletionSource _shutdownTask = new TaskCompletionSource();
+        private readonly IServiceScopeFactory _serviceScopeFactory;
 
 
         public TelegramBot(
             ILogger<TelegramBot>? logger,
-            TelegramBotSettings settings,
+            IServiceScopeFactory serviceScopeFactory,
             IChatHistory chatHistory,
-            ILLM llm,
-            ILLMConfigFactory lLMConfigFactory)
+            TelegramBotSettings settings,
+            ILLM llm)
         {
+            _serviceScopeFactory = serviceScopeFactory;
             _bot = new TelegramBotClient(settings.AccessToken);
             _logger = logger;
-            _chatHistory = chatHistory;
             _llm = llm;
-            _llmConfigFactory = lLMConfigFactory;
+            _chatHistory = chatHistory;
         }
 
         private async Task<int> ProcessUpdate(Telegram.Bot.Types.Update update, CancellationToken cancellationToken)
@@ -56,38 +59,39 @@ namespace ChatBot.Interfaces
 
             var chat = new Chat("Telegram", update.Message.Chat.Id.ToString());
 
-            var prevMessagesTask = _chatHistory.GetMessages(chat, cancellationToken);
-
-            var promptConfig = await _llmConfigFactory.CreateLLMConfig(chat);
-
-            var messages = (await prevMessagesTask).ToList();
-
-            var userMessage = new Message
+            using (var scope = _serviceScopeFactory.CreateAsyncScope())
             {
-                Timestamp = now,
-                Author = Author.User,
-                Content = update.Message.Text ?? string.Empty
-            };
+                var userMessageContext = scope.ServiceProvider.GetRequiredService<Prompt.UserMessageContext>();
+                userMessageContext.Chat = chat;
+                var userMessage = new Message
+                {
+                    Author = Author.User,
+                    Content = update.Message.Text ?? string.Empty,
+                    Timestamp = now
+                };
+                userMessageContext.Message = userMessage;
 
-            messages.Add(userMessage);
+                var promptCompiler = scope.ServiceProvider.GetRequiredService<IPromptCompiler>();
 
-            // send typing indicator
-            var typingTask = _bot.SendChatActionAsync(update.Message.Chat.Id, Telegram.Bot.Types.Enums.ChatAction.Typing);
-            var llmStart = Stopwatch.StartNew();
-            var response = await _llm.GenerateResponseAsync(promptConfig, messages, cancellationToken);
-            llmStart.Stop();
-            _logger?.LogInformation($"LLM response time: {llmStart.ElapsedMilliseconds}ms");
+                var prompt = await promptCompiler.CompilePrompt("llama3-chat-turn-root", cancellationToken);
 
-            await typingTask;
-            _logger?.LogInformation($"Sending response to {update.Message.Chat.Id}: {response}");
-            var sent = await _bot.SendTextMessageAsync(update.Message.Chat.Id, response);
+                // send typing indicator
+                var typingTask = _bot.SendChatActionAsync(update.Message.Chat.Id, Telegram.Bot.Types.Enums.ChatAction.Typing);
+                var llmStart = Stopwatch.StartNew();
+                var response = await _llm.GenerateResponseAsync(prompt, cancellationToken, chat);
+                llmStart.Stop();
+                _logger?.LogInformation($"LLM response time: {llmStart.ElapsedMilliseconds}ms");
 
-            now = DateTime.UtcNow;
+                await typingTask;
+                _logger?.LogInformation($"Sending response to {update.Message.Chat.Id}: {response}");
+                var sent = await _bot.SendTextMessageAsync(update.Message.Chat.Id, response);
 
-            if (sent != null)
-            {
-                // intentionally not awaiting for faster return
-                _ = _chatHistory.LogMessages(chat, new Message[] {
+                now = DateTime.UtcNow;
+
+                if (sent != null)
+                {
+                    // intentionally not awaiting for faster return
+                    _ = _chatHistory.LogMessages(chat, new Message[] {
                     userMessage,
                     new Message
                     {
@@ -96,10 +100,11 @@ namespace ChatBot.Interfaces
                         Content = response
                     }}, cancellationToken);
 
-                _logger?.LogInformation($"Submitted conv turn for persisting");
-            }
+                    _logger?.LogInformation($"Submitted conv turn for persisting");
+                }
 
-            return update.Id + 1;
+                return update.Id + 1;
+            }
         }
 
         public async Task Run(CancellationToken cancellationToken) {

@@ -23,17 +23,20 @@ namespace HuggingFace
         {
             using HF.Llama3_8B llama3_8B = new HF.Llama3_8B(_huggingFaceToken);
 
-            var configMock = new Mock<ChatBot.LLMs.IPromptConfig>();
-            configMock.SetupGet(x => x.BotPersonaSpecificPrompt).Returns("My name is Donald.");
-            configMock.SetupGet(x => x.UserSpecificPrompt).Returns("I must reply with single word.");
+            var prompt = @"<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+Your name is Donald. You must reply with single word.<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+Hello<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+Hi<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+What's your name?<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+";
 
 
-            var response = await llama3_8B.GenerateResponseAsync(configMock.Object, new List<ChatBot.LLMs.Message>
-            {
-                new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.User, Content = "Hello" },
-                new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.Bot, Content = "Hi" },
-                new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.User, Content = "What's your name?" }
-            }, CancellationToken.None);
+            var response = await llama3_8B.GenerateResponseAsync(prompt, CancellationToken.None, null);
 
             Assert.Equal("Donald", response);
         }
@@ -45,18 +48,23 @@ namespace HuggingFace
         {
             using HF.Llama3_8B llama3_8B = new HF.Llama3_8B(_huggingFaceToken);
 
-            var configMock = new Mock<ChatBot.LLMs.IPromptConfig>();
-            configMock.SetupGet(x => x.BotPersonaSpecificPrompt).Returns("My name is Donald.");
-            configMock.SetupGet(x => x.UserSpecificPrompt).Returns("I must reply with single word.");
+            var prompt = @"<|begin_of_text|><|start_header_id|>system<|end_header_id|>
 
-            var response = await llama3_8B.GenerateResponseAsync(configMock.Object, new List<ChatBot.LLMs.Message>
-            {
-                new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.User, Content = "Hello" },
-                new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.Bot, Content = "Hi" },
-                new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.User, Content = "The length of AB is 3241" },
-                new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.Bot, Content = "Ok" },
-                new ChatBot.LLMs.Message { Author = ChatBot.LLMs.Author.User, Content = "What is the length of AB?" },
-            }, CancellationToken.None);
+Your name is Donald. You must reply with single word.<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+Hello<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+Hi<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+The length of AB is 3241<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+Ok<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+What is the length of AB?<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+";
+
+            var response = await llama3_8B.GenerateResponseAsync(prompt, CancellationToken.None, null);
 
             Assert.Equal("3241", response);
         }

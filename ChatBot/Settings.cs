@@ -11,11 +11,18 @@ namespace ChatBot
     {
         public TelegramBotSettings? TelegramBot { get; set; }
 
-        public PersonaConfig? Persona { get; set; }
-
         public LLMConfig? LLM { get; set; }
 
         public PersistenceConfig? Persistence { get; set; }
+
+        public PromptsSettings? Prompts { get; set; }
+
+        public bool? UseMessageTimestamps { get; set; }
+    }
+
+    public class PromptsSettings
+    {
+        public Dictionary<string, string>? Inline { get; set; }
     }
 
     public class PersistenceConfig
@@ -44,26 +51,6 @@ namespace ChatBot
     public class TelegramBotSettings
     {
         public string AccessToken { get; set; }
-    }
-
-    public class PersonaConfig
-    {
-        public InlinePersonaConfig? InlineConfig { get; set; }
-
-        /// <summary>
-        /// This adds a sense of time to LLM
-        /// </summary>
-        public bool? UseMessageTimestamps { get; set; }
-
-        // TODO: add database support
-    }
-
-    public class InlinePersonaConfig
-    {
-        public string BotSpecificPrompt { get; set; }
-        public string? UnknownUserPrompt { get; set; }
-
-        public Dictionary<string, string> KnownUsersPrompts { get; set; }
     }
 
     public class PostgresConfig
