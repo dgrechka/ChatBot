@@ -33,12 +33,10 @@ namespace ChatBot.LLMs.HuggingFace
             };
         }
 
-        public async Task<string> GenerateResponseAsync(IPromptConfig config, IEnumerable<Message> messages, CancellationToken cancellationToken)
+        public async Task<string> GenerateResponseAsync(string prompt, CancellationToken cancellationToken, Chat chat)
         {
-            var llmInput = Llama3.PrepareInput(config, messages);
-
             // do a POST request with llmInput.ToString() as the input
-            JsonContent content = JsonContent.Create(new { inputs = llmInput });
+            JsonContent content = JsonContent.Create(new { inputs = prompt });
             HttpResponseMessage response = await _httpClient.PostAsync("meta-llama/Meta-Llama-3-8B-Instruct", content: content, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
@@ -48,7 +46,7 @@ namespace ChatBot.LLMs.HuggingFace
             var responseJson = JsonSerializer.Deserialize<HuggingFaceReply[]>(responseContent);
             string generatedText = responseJson[0].GeneratedText;
 
-            string responseText = generatedText.Substring(llmInput.Length);
+            string responseText = generatedText.Substring(prompt.Length);
             return responseText;
 
         }

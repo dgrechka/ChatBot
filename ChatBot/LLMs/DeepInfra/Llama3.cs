@@ -92,20 +92,18 @@ namespace ChatBot.LLMs.DeepInfra
 
         }
 
-        public async Task<string> GenerateResponseAsync(IPromptConfig config, IEnumerable<Message> messages, CancellationToken cancellationToken)
+        public async Task<string> GenerateResponseAsync(string prompt, CancellationToken cancellationToken, Chat chat)
         {
-            var llmInput = Llama3.PrepareInput(config, messages);
-
             var request = new InferenceRequest
             {
-                Input = llmInput,
+                Input = prompt,
                 MaxNewTokens = _settings.MaxTokens,
             };
 
             var response = await GenerateResponseAsync(request, cancellationToken);
             _logger?.LogInformation($"InputTokens: {response.Status.TokensInput}; OutputTokens: {response.Status.TokensGenerated}; Cost: {response.Status.Cost}; RuntimeMs: {response.Status.RuntimeMs}");
 
-            _billingLogger?.LogLLMCost(config.Chat.ToString(), "DeepInfra", _settings.ModelName, response.Status.TokensInput, response.Status.TokensGenerated, response.Status.Cost, "USD", cancellationToken);
+            _billingLogger?.LogLLMCost(chat.ToString(), "DeepInfra", _settings.ModelName, response.Status.TokensInput, response.Status.TokensGenerated, response.Status.Cost, "USD", cancellationToken);
 
             return response.Results[0].GeneratedText;
         }

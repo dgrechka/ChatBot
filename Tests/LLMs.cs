@@ -28,7 +28,7 @@ namespace LLMs
                 new Message { Author = Author.User, Content = "See you"}
             };
 
-            var input = ChatBot.LLMs.Llama3.PrepareInput(config, messages);
+            var input = ChatBot.LLMs.Llama3ConvFormatter.PrepareInput(config, messages);
 
             Assert.Equal("<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nHello\tHi<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nHow are you?<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\nI'm fine<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nSee you<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n", input);
         }
@@ -51,7 +51,7 @@ namespace LLMs
                 new Message { Author = Author.User, Content = "See you", Timestamp = new DateTime(2024,06,05, 14,05,04)}
             };
 
-            var input = ChatBot.LLMs.Llama3.PrepareInput(configMock.Object, messages);
+            var input = ChatBot.LLMs.Llama3ConvFormatter.PrepareInput(configMock.Object, messages);
 
             Assert.Equal(@"<|begin_of_text|><|start_header_id|>system<|end_header_id|>
 

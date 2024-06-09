@@ -8,6 +8,6 @@ namespace ChatBot.LLMs
 {
     public interface ILLM
     {
-        Task<string> GenerateResponseAsync(IPromptConfig config, IEnumerable<Message> messages, CancellationToken cancellationToken);
+        Task<string> GenerateResponseAsync(string prompt, CancellationToken cancellationToken, Chat chat);
     }
 }

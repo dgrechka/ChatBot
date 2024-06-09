@@ -3,6 +3,7 @@ using ChatBot.Chats;
 using ChatBot.Interfaces;
 using ChatBot.LLMs;
 using ChatBot.Persistence;
+using ChatBot.Prompt;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -54,24 +55,16 @@ namespace ChatBot
                 logger.LogInformation("Telegram bot is enabled");
             }
 
-            if (settings.Persona?.InlineConfig != null)
+            if (settings.Prompts?.Inline != null)
             {
                 builder.Services
-                    .AddSingleton(settings.Persona.InlineConfig)
-                    .AddSingleton<ILLMConfigFactory, LLMConfigFactoryInline>(p => new LLMConfigFactoryInline(
-                        p.GetRequiredService<ILogger<LLMConfigFactoryInline>>(),
-                        p.GetRequiredService<InlinePersonaConfig>(),
-                        settings.Persona.UseMessageTimestamps ?? false
-                        ));
+                    .AddSingleton<ITemplateSource, DictionaryTemplateSource>(p => new DictionaryTemplateSource(settings.Prompts?.Inline!))
+                    .AddScoped<ITemplateSource, InlineConfigUserSpecificScopedTemplateSource>(p => new InlineConfigUserSpecificScopedTemplateSource(
+                        p.GetRequiredService<ILogger<InlineConfigUserSpecificScopedTemplateSource>>(),
+                        settings.Prompts?.Inline!,
+                        p.GetRequiredService<Prompt.UserMessageContext>()));
                 
-                logger.LogInformation("Persona configuration is enabled");
-                if (settings.Persona.UseMessageTimestamps == true)
-                {
-                    logger.LogInformation("Message timestamps are enabled");
-                }
-                else {
-                    logger.LogInformation("Message timestamps are disabled");
-                }
+                logger.LogInformation($"{settings.Prompts?.Inline.Count} prompt templates loaded from .NET configuration");
             }
 
             if (settings.LLM?.HuggingFace != null)
@@ -115,9 +108,15 @@ namespace ChatBot
                         settings.LLM.DeepInfra.ApiKey,
                         settings.LLM.DeepInfra.MaxTokensToGenerate,
                         modelFlavor
-                        ));
+                        ))
+                    .AddSingleton<IConversationFormatter,Llama3ConvFormatter>(p => new Llama3ConvFormatter(settings?.UseMessageTimestamps ?? false));
                 logger.LogInformation("DeepInfra Llama3Client is enabled (flavor {0}; max tokens {1})", modelFlavor, settings.LLM.DeepInfra.MaxTokensToGenerate);
-                
+            }
+
+            if (settings?.UseMessageTimestamps ?? false) {
+                logger.LogInformation("Message timestamps are enabled");
+            } else {
+                logger.LogInformation("Message timestamps are disabled");
             }
 
             if (settings.Persistence?.Postgres != null)
@@ -126,16 +125,19 @@ namespace ChatBot
                     .AddSingleton(settings.Persistence.Postgres)
                     .AddSingleton<PostgresConnection>()
                     .AddSingleton<IBillingLogger, PostgresBillingLogger>()
-                    .AddSingleton<IChatHistory, PostgresChatHistory>();
+                    .AddSingleton<IChatHistory, PostgresChatHistory>()
+                    .AddScoped<ITemplateSource, RecentMessagesScopedTemplateSource>();
                 logger.LogInformation("Postgres billing logging enabled");
                 logger.LogInformation("Postgres chat history is enabled");
             } else
             {
                 builder.Services.AddSingleton<IChatHistory, MemoryChatHistory>();
                 logger.LogWarning("Chat history storage is not configured, using in-memory storage");
-
             }
 
+            builder.Services.AddSingleton<ITemplateSource, FileTemplateSource>(p => new FileTemplateSource(System.IO.Path.Combine("Data", "DefaultPrompts")));
+            builder.Services.AddScoped<Prompt.UserMessageContext>();
+            builder.Services.AddTransient<IPromptCompiler, Prompt.Compiler>();
 
             using IHost host = builder.Build();
 

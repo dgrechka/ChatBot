@@ -10,11 +10,11 @@ namespace ChatBot.Prompt
     public interface ITemplateSource
     {
         Task<bool> HasKey(string key);
-        Task<string> GetValue(string key);
+        Task<string> GetValue(string key, CancellationToken cancellationToken);
     }
     public interface IPromptCompiler
     {
-        Task<string> CompilePrompt(string keyToCompile);
+        Task<string> CompilePrompt(string keyToCompile, CancellationToken cancellationToken);
     }
 
     public class Compiler: IPromptCompiler
@@ -28,10 +28,10 @@ namespace ChatBot.Prompt
             _logger = logger;
         }
 
-        public async Task<string> CompilePrompt(string keyToCompile)
+        public async Task<string> CompilePrompt(string keyToCompile, CancellationToken cancellationToken)
         {
             var sw = new System.Diagnostics.Stopwatch();
-            // 1. forward pass. gather dependencies strating with keyToCompile, and build the dependencies graph
+            // 1. forward pass. gather dependencies starting with keyToCompile, and build the dependencies graph
             Dictionary<string, HashSet<string>> dependencies = new();
             Dictionary<string, HashSet<string>> dependents = new();
             Dictionary<string,Template> templates = new();
@@ -51,7 +51,7 @@ namespace ChatBot.Prompt
                 {
                     if(await source.HasKey(key))
                     {
-                        var rawTemplateStr = await source.GetValue(key);
+                        var rawTemplateStr = await source.GetValue(key, cancellationToken);
                         var template = new Template(rawTemplateStr);
                         templates[key] = template;
 
