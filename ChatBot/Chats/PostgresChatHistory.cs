@@ -13,7 +13,7 @@ using System.Data.Common;
 
 namespace ChatBot.Chats
 {
-    public class PostgresChatHistory : PostgresBasedStorage, IChatHistory
+    public class PostgresChatHistory : PostgresBasedStorage, IChatHistoryWriter, IChatHistoryReader
     {
         private readonly PostgresConnection _postgres;
         private readonly ILogger<PostgresChatHistory> _logger;

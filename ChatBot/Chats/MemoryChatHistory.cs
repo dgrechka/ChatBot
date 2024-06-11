@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ChatBot.Chats
 {
-    public class MemoryChatHistory : IChatHistory
+    public class MemoryChatHistory : IChatHistoryReader, IChatHistoryWriter
     {
         private readonly Dictionary<Chat, LinkedList<Message>> _storage = new Dictionary<Chat, LinkedList<Message>>();
 

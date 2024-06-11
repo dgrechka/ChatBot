@@ -1,4 +1,5 @@
 ﻿using ChatBot.LLMs;
+using ChatBot.ScheduledTasks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,6 +19,8 @@ namespace ChatBot
         public PromptsSettings? Prompts { get; set; }
 
         public bool? UseMessageTimestamps { get; set; }
+
+        public ConversationProcessingSettings? ConversationProcessing { get; set; }
     }
 
     public class PromptsSettings

@@ -14,9 +14,8 @@ using Telegram.Bot.Requests;
 
 namespace ChatBot.Interfaces
 {
-    public interface IChatHistory {
-        Task<IEnumerable<Message>> GetMessages(Chat chat, CancellationToken cancellationToken);
-        Task LogMessages(Chat chat, IEnumerable<Message> messages, CancellationToken cancellationToken);
+    public interface IConversationProcessingScheduler {
+        Task SetLatestMessageTime(Chat chat, DateTime time);
     }
 
     public class TelegramBot : IHostedService
@@ -25,7 +24,8 @@ namespace ChatBot.Interfaces
         private readonly ILogger<TelegramBot>? _logger;
         private readonly ILLM _llm;
         private readonly IPromptCompiler _promptCompiler;
-        private readonly IChatHistory _chatHistory;
+        private readonly IChatHistoryWriter _chatHistoryWriter;
+        private readonly IConversationProcessingScheduler _conversationProcessor;
 
         private readonly CancellationTokenSource _shutdownCTS = new CancellationTokenSource();
         private readonly TaskCompletionSource _shutdownTask = new TaskCompletionSource();
@@ -35,7 +35,8 @@ namespace ChatBot.Interfaces
         public TelegramBot(
             ILogger<TelegramBot>? logger,
             IServiceScopeFactory serviceScopeFactory,
-            IChatHistory chatHistory,
+            IConversationProcessingScheduler conversationProcessor,
+            IChatHistoryWriter chatHistoryWriter,
             TelegramBotSettings settings,
             ILLM llm)
         {
@@ -43,7 +44,8 @@ namespace ChatBot.Interfaces
             _bot = new TelegramBotClient(settings.AccessToken);
             _logger = logger;
             _llm = llm;
-            _chatHistory = chatHistory;
+            _chatHistoryWriter = chatHistoryWriter;
+            _conversationProcessor = conversationProcessor;
         }
 
         private async Task<int> ProcessUpdate(Telegram.Bot.Types.Update update, CancellationToken cancellationToken)
@@ -90,16 +92,22 @@ namespace ChatBot.Interfaces
 
                 if (sent != null)
                 {
-                    // intentionally not awaiting for faster return
-                    _ = _chatHistory.LogMessages(chat, new Message[] {
-                    userMessage,
-                    new Message
+                    var saveTask = async () =>
                     {
-                        Timestamp = now,
-                        Author = Author.Bot,
-                        Content = response
-                    }}, cancellationToken);
+                        await _chatHistoryWriter.LogMessages(chat, new Message[] {
+                            userMessage,
+                            new Message
+                            {
+                                Timestamp = now,
+                                Author = Author.Bot,
+                                Content = response
+                            }}, cancellationToken);
 
+                        await _conversationProcessor.SetLatestMessageTime(chat, now);
+                    };
+
+                    // intentionally not awaiting for faster return
+                    _ = saveTask();
                     _logger?.LogInformation($"Submitted conv turn for persisting");
                 }
 

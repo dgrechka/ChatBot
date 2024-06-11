@@ -18,13 +18,13 @@ namespace ChatBot.Prompt
         public static string TemplateKey => "llm-formatted-recent-messages-with-reply-primer";
 
         private readonly ILogger<RecentMessagesScopedTemplateSource>? _logger;
-        private readonly IChatHistory _chatHistory;
+        private readonly IChatHistoryReader _chatHistory;
         private readonly IConversationFormatter _conversationFormatter;
         private readonly UserMessageContext _userMessageContext;
 
         public RecentMessagesScopedTemplateSource(
             ILogger<RecentMessagesScopedTemplateSource>? logger,
-            IChatHistory chatHistory,
+            IChatHistoryReader chatHistory,
             IConversationFormatter conversationFormatter,
             UserMessageContext userMessageContext)
         {
