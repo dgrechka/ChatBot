@@ -9,7 +9,9 @@ namespace ChatBot.Interfaces
 {
     public interface IChatHistoryReader
     {
-        Task<IEnumerable<Message>> GetMessages(Chat chat, CancellationToken cancellationToken);
+        IAsyncEnumerable<Message> GetMessagesSince(Chat chat, DateTime time, CancellationToken cancellationToken);
+
+        IAsyncEnumerable<Chat> GetChats(CancellationToken cancellationToken);
     }
 
     public interface IChatHistoryWriter

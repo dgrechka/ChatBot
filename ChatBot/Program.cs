@@ -2,9 +2,9 @@
 using ChatBot.Chats;
 using ChatBot.Interfaces;
 using ChatBot.LLMs;
-using ChatBot.Persistence;
 using ChatBot.Prompt;
 using ChatBot.ScheduledTasks;
+using ChatBot.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -128,9 +128,11 @@ namespace ChatBot
                     .AddSingleton<IBillingLogger, PostgresBillingLogger>()
                     .AddSingleton<IChatHistoryReader, PostgresChatHistory>()
                     .AddSingleton<IChatHistoryWriter>(p => (PostgresChatHistory)p.GetRequiredService<IChatHistoryReader>())
+                    .AddSingleton<ISummaryStorage,PostgresSummaryStorage>()
                     .AddScoped<ITemplateSource, RecentMessagesScopedTemplateSource>();
                 logger.LogInformation("Postgres billing logging enabled");
                 logger.LogInformation("Postgres chat history is enabled");
+                logger.LogInformation("Postgres summary storage enabled");
             } else
             {
                 builder.Services.AddSingleton<IChatHistoryReader, MemoryChatHistory>();
@@ -142,11 +144,20 @@ namespace ChatBot
             {
                 builder.Services.AddSingleton<IConversationProcessingScheduler, ConversationProcessingScheduler>();
                 builder.Services.AddSingleton(settings.ConversationProcessing);
-                logger.LogInformation("Conversation processing scheduler is enabled");
+                logger.LogInformation($"Conversation processing scheduler is enabled. Considering conversation as complete if no messages in {settings.ConversationProcessing.IdleConversationInterval}");
+
+                if(settings.ConversationProcessing.EnableConvSummaryForRAGGeneration)
+                {
+                    builder.Services.AddScoped<IConversationProcessor, GeneralSummaryProcessorScoped>();
+                    logger.LogInformation("General summary conversation processing is enabled");
+                }
             }
             else {
+                builder.Services.AddSingleton<IConversationProcessingScheduler, DisabledConversationProcessingScheduler>();
                 logger.LogWarning("Conversation processing scheduler is NOT configured. thus DISABLED");
             }
+
+            builder.Services.AddHostedService<StartupProcessing>();
 
             builder.Services.AddSingleton<ITemplateSource, FileTemplateSource>(p => new FileTemplateSource(System.IO.Path.Combine("Data", "DefaultPrompts")));
             builder.Services.AddScoped<Prompt.UserMessageContext>();

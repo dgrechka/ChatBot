@@ -41,7 +41,12 @@ namespace ChatBot.Prompt
                 throw new ArgumentException($"Key {key} is not supported by this source");
             }
 
-            var prevMessages = await _chatHistory.GetMessages(_userMessageContext.Chat, cancellationToken);
+            List<Message> prevMessages = new();
+
+            await foreach (var prevMessage in _chatHistory.GetMessagesSince(_userMessageContext.Chat, DateTime.UtcNow - TimeSpan.FromHours(1), cancellationToken))
+            {
+                prevMessages.Add(prevMessage);
+            }
 
             var prevMessagesWithCurrentMessage = prevMessages.Append(_userMessageContext.Message);
 

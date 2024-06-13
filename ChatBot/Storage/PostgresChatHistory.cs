@@ -7,19 +7,16 @@ using System.Text;
 using System.Threading.Tasks;
 using Npgsql;
 using Microsoft.Extensions.Logging;
-using ChatBot.Persistence;
 using Newtonsoft.Json.Linq;
 using System.Data.Common;
+using ChatBot.Storage;
 
 namespace ChatBot.Chats
 {
     public class PostgresChatHistory : PostgresBasedStorage, IChatHistoryWriter, IChatHistoryReader
     {
-        private readonly PostgresConnection _postgres;
         private readonly ILogger<PostgresChatHistory> _logger;
-        private bool _initialized = false;
-        private SemaphoreSlim _initSem = new SemaphoreSlim(1);
-
+        
         protected override async Task InitializeCore(CancellationToken token)
         {
             _logger.LogInformation("Initializing PostgresChatHistory");
@@ -49,10 +46,9 @@ namespace ChatBot.Chats
             : base(postgres)
         {
             _logger = logger;
-            _postgres = postgres;
         }
 
-        public async Task<IEnumerable<Message>> GetMessages(Chat chat, CancellationToken cancellationToken)
+        public async IAsyncEnumerable<Message> GetMessagesSince(Chat chat, DateTime time, CancellationToken cancellationToken)
         {
             await EnsureInitialized(cancellationToken);
 
@@ -62,36 +58,55 @@ namespace ChatBot.Chats
             command.CommandText = @"
                     SELECT Timestamp, Sender, Content
                     FROM MessageHistory
-                    WHERE ChatId = @ChatId
-                    ORDER BY Timestamp DESC
-                    LIMIT 10;
+                    WHERE ChatId = @ChatId AND Timestamp > @Time
+                    ORDER BY Timestamp ASC;
                 ";
             command.Parameters.AddWithValue("ChatId", chat.ToString());
+            command.Parameters.AddWithValue("Time", time);
             using var reader = await command.ExecuteReaderAsync(cancellationToken);
-            var messages = new List<Message>();
             while (await reader.ReadAsync(cancellationToken))
             {
+                Message message = null;
                 try
                 {
-                    var message = new Message
+                    message = new Message
                     {
                         Timestamp = reader.GetDateTime(0),
                         Author = Enum.Parse<Author>(reader.GetString(1)),
                         Content = reader.GetString(2)
                     };
-                    messages.Add(message);
                 }
                 catch (ArgumentException e)
                 {
                     _logger.LogWarning("Failed to parse message author: {0}", e.Message);
                 }
+
+                if(message != null)
+                {
+                    yield return message;
+                }
             }
             await connection.CloseAsync();
+        }
 
-            // sorting messages in ascending order
-            messages.Reverse();
+        public async IAsyncEnumerable<Chat> GetChats(CancellationToken cancellationToken)
+        {
+            await EnsureInitialized(cancellationToken);
 
-            return messages;
+            using var connection = _postgres.DataSource.CreateConnection();
+            await connection.OpenAsync(cancellationToken);
+            using var command = connection.CreateCommand();
+            command.CommandText = @"
+                    SELECT DISTINCT ChatId
+                    FROM MessageHistory;
+                ";
+            using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var split = reader.GetString(0).Split('|');
+                yield return new Chat(split[0], split[1]);
+            }
+            await connection.CloseAsync();
         }
 
         public async Task LogMessages(Chat chat, IEnumerable<Message> messages, CancellationToken cancellationToken)

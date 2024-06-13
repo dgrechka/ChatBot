@@ -1,4 +1,5 @@
-﻿using ChatBot.Persistence;
+﻿using ChatBot.LLMs;
+using ChatBot.Storage;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -29,6 +30,7 @@ namespace ChatBot.Billing
                                 ChatId TEXT NOT NULL,
                                 Provider TEXT NOT NULL,
                                 Model TEXT NOT NULL,
+                                CallPurpose TEXT NOT NULL,
                                 InputTokenCount INT NOT NULL,
                                 GeneratedTokenCount INT NOT NULL,
                                 EstimatedCost DECIMAL NOT NULL,
@@ -40,7 +42,7 @@ namespace ChatBot.Billing
             await connection.CloseAsync();
         }
 
-        public async Task LogLLMCost(string chatId, string provider, string model, int inputTokenCount, int generatedTokenCount, decimal estimatedCost, string currency, CancellationToken token)
+        public async Task LogLLMCost(AccountingInfo accountingInfo, string provider, string model, int inputTokenCount, int generatedTokenCount, decimal estimatedCost, string currency, CancellationToken token)
         {
             await EnsureInitialized(token);
 
@@ -48,11 +50,12 @@ namespace ChatBot.Billing
             await connection.OpenAsync(token);
             using var command = connection.CreateCommand();
             command.CommandText = @"
-                INSERT INTO LLMCost (ChatId, Provider, Model, InputTokenCount, GeneratedTokenCount, EstimatedCost, Currency, Timestamp)
-                VALUES (@ChatId, @Provider, @Model, @InputTokenCount, @GeneratedTokenCount, @EstimatedCost, @Currency, @Timestamp);";
-            command.Parameters.AddWithValue("ChatId", chatId);
+                INSERT INTO LLMCost (ChatId, Provider, Model, CallPurpose, InputTokenCount, GeneratedTokenCount, EstimatedCost, Currency, Timestamp)
+                VALUES (@ChatId, @Provider, @Model, @CallPurpose, @InputTokenCount, @GeneratedTokenCount, @EstimatedCost, @Currency, @Timestamp);";
+            command.Parameters.AddWithValue("ChatId", accountingInfo.Chat.ToString());
             command.Parameters.AddWithValue("Provider", provider);
             command.Parameters.AddWithValue("Model", model);
+            command.Parameters.AddWithValue("CallPurpose", accountingInfo.CallPurpose);
             command.Parameters.AddWithValue("InputTokenCount", inputTokenCount);
             command.Parameters.AddWithValue("GeneratedTokenCount", generatedTokenCount);
             command.Parameters.AddWithValue("EstimatedCost", estimatedCost);

@@ -36,7 +36,7 @@ What's your name?<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 ";
 
 
-            var response = await llama3_8B.GenerateResponseAsync(prompt, CancellationToken.None, null);
+            var response = await llama3_8B.GenerateResponseAsync(prompt, null, null, CancellationToken.None);
 
             Assert.Equal("Donald", response);
         }
@@ -64,7 +64,7 @@ What is the length of AB?<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
 ";
 
-            var response = await llama3_8B.GenerateResponseAsync(prompt, CancellationToken.None, null);
+            var response = await llama3_8B.GenerateResponseAsync(prompt, null, null, CancellationToken.None);
 
             Assert.Equal("3241", response);
         }

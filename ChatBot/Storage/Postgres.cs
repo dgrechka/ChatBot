@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ChatBot.Persistence
+namespace ChatBot.Storage
 {
     public class PostgresConnection : IDisposable
     {
@@ -26,7 +26,8 @@ namespace ChatBot.Persistence
         }
     }
 
-    public abstract class PostgresBasedStorage {
+    public abstract class PostgresBasedStorage
+    {
         protected readonly PostgresConnection _postgres;
         private bool _initialized = false;
         private SemaphoreSlim _initSem = new SemaphoreSlim(1);
@@ -41,7 +42,7 @@ namespace ChatBot.Persistence
                 // create Message History table if it doesn't exist
                 if (!_initialized)
                 {
-                    await this.InitializeCore(token);
+                    await InitializeCore(token);
                     _initialized = true;
                 }
             }

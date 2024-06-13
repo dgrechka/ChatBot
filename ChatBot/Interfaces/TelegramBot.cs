@@ -15,7 +15,7 @@ using Telegram.Bot.Requests;
 namespace ChatBot.Interfaces
 {
     public interface IConversationProcessingScheduler {
-        Task SetLatestMessageTime(Chat chat, DateTime time);
+        Task NotifyLatestMessageTime(Chat chat, DateTime time);
     }
 
     public class TelegramBot : IHostedService
@@ -75,12 +75,13 @@ namespace ChatBot.Interfaces
 
                 var promptCompiler = scope.ServiceProvider.GetRequiredService<IPromptCompiler>();
 
-                var prompt = await promptCompiler.CompilePrompt("llama3-chat-turn-root", cancellationToken);
+                var prompt = await promptCompiler.CompilePrompt("llama3-chat-turn-root", null, cancellationToken);
 
                 // send typing indicator
-                var typingTask = _bot.SendChatActionAsync(update.Message.Chat.Id, Telegram.Bot.Types.Enums.ChatAction.Typing);
+                var typingTask = _bot.SendChatActionAsync(update.Message.Chat.Id, Telegram.Bot.Types.Enums.ChatAction.Typing, cancellationToken: cancellationToken);
                 var llmStart = Stopwatch.StartNew();
-                var response = await _llm.GenerateResponseAsync(prompt, cancellationToken, chat);
+                var accountingInfo = new AccountingInfo(chat, "ChatTurn");
+                var response = await _llm.GenerateResponseAsync(prompt, accountingInfo, null, cancellationToken);
                 llmStart.Stop();
                 _logger?.LogInformation($"LLM response time: {llmStart.ElapsedMilliseconds}ms");
 
@@ -103,7 +104,7 @@ namespace ChatBot.Interfaces
                                 Content = response
                             }}, cancellationToken);
 
-                        await _conversationProcessor.SetLatestMessageTime(chat, now);
+                        await _conversationProcessor.NotifyLatestMessageTime(chat, now);
                     };
 
                     // intentionally not awaiting for faster return
