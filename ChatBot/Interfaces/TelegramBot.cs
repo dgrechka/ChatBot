@@ -50,8 +50,6 @@ namespace ChatBot.Interfaces
 
         private async Task<int> ProcessUpdate(Telegram.Bot.Types.Update update, CancellationToken cancellationToken)
         {
-            var now = DateTime.UtcNow;
-
             if (update.Message == null)
             {
                 _logger?.LogWarning("Received update without message");
@@ -69,7 +67,7 @@ namespace ChatBot.Interfaces
                 {
                     Author = Author.User,
                     Content = update.Message.Text ?? string.Empty,
-                    Timestamp = now
+                    Timestamp = update.Message.Date.ToUniversalTime(),
                 };
                 userMessageContext.Message = userMessage;
 
@@ -89,7 +87,7 @@ namespace ChatBot.Interfaces
                 _logger?.LogInformation($"Sending response to {update.Message.Chat.Id}: {response}");
                 var sent = await _bot.SendTextMessageAsync(update.Message.Chat.Id, response);
 
-                now = DateTime.UtcNow;
+                var now = DateTime.UtcNow;
 
                 if (sent != null)
                 {

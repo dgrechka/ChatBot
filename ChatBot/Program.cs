@@ -110,7 +110,8 @@ namespace ChatBot
                         settings.LLM.DeepInfra.MaxTokensToGenerate,
                         modelFlavor
                         ))
-                    .AddSingleton<IConversationFormatter,Llama3ConvFormatter>(p => new Llama3ConvFormatter(settings?.UseMessageTimestamps ?? false, DateTime.UtcNow));
+                    // transient ensures that the timestamps is correct
+                    .AddTransient<IConversationFormatter,Llama3ConvFormatter>(p => new Llama3ConvFormatter(settings?.UseMessageTimestamps ?? false, DateTime.UtcNow));
                 logger.LogInformation("DeepInfra Llama3Client is enabled (flavor {0}; max tokens {1})", modelFlavor, settings.LLM.DeepInfra.MaxTokensToGenerate);
             }
 
