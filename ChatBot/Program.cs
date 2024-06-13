@@ -149,8 +149,14 @@ namespace ChatBot
 
                 if(settings.ConversationProcessing.EnableConvSummaryForRAGGeneration)
                 {
-                    builder.Services.AddScoped<IConversationProcessor, GeneralSummaryProcessorScoped>();
+                    builder.Services.AddScoped<IConversationProcessor, GeneralSummaryExtractorScoped>();
                     logger.LogInformation("General summary conversation processing is enabled");
+                }
+
+                if(settings.ConversationProcessing.UserProfileProperties != null)
+                {
+                    builder.Services.AddScoped<IConversationProcessor, PersonalityTraitsExtractorScoped>();
+                    logger.LogInformation("Personality traits conversation processing is enabled");
                 }
             }
             else {

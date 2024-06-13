@@ -42,7 +42,7 @@ namespace ChatBot.Storage
             await connection.CloseAsync();
         }
 
-        public async Task<DateTime?> GetLatestSummary(Chat chat, string summaryId, CancellationToken cancellationToken)
+        public async Task<Summary?> GetLatestSummary(Chat chat, string summaryId, CancellationToken cancellationToken)
         {
             await EnsureInitialized(cancellationToken);
 
@@ -51,17 +51,23 @@ namespace ChatBot.Storage
             try
             {
                 using var command = connection.CreateCommand();
+
                 command.CommandText = @"
-                    SELECT MAX(Timestamp)
+                    SELECT Timestamp, Summary
                     FROM Summaries
                     WHERE ChatId = @ChatId AND SummaryId = @SummaryId
-                ";
+                    ORDER BY Timestamp DESC
+                    LIMIT 1";
                 command.Parameters.Add(new Npgsql.NpgsqlParameter("@ChatId", chat.ToString()));
                 command.Parameters.Add(new Npgsql.NpgsqlParameter("@SummaryId", summaryId));
 
-                var result = await command.ExecuteScalarAsync(cancellationToken);
+                using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-                return result is DBNull ? null : (DateTime?)result;
+                return await reader.ReadAsync(cancellationToken) ? new Summary
+                {
+                    Time = reader.GetDateTime(0),
+                    Content = reader.GetString(1)
+                } : null;
             }
             finally
             {

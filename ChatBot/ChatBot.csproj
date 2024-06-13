@@ -25,6 +25,9 @@
     <None Update="Data\DefaultPrompts\llama3-chat-turn-root.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Data\DefaultPrompts\llama3-user-profile-updater.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Data\DefaultPrompts\llama3-conversation-summary.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
