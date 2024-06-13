@@ -8,19 +8,33 @@ using System.Threading.Tasks;
 
 namespace ChatBot.Chats
 {
-    public class MemoryChatHistory : IChatHistory
+    public class MemoryChatHistory : IChatHistoryReader, IChatHistoryWriter
     {
         private readonly Dictionary<Chat, LinkedList<Message>> _storage = new Dictionary<Chat, LinkedList<Message>>();
 
-        public Task<IEnumerable<Message>> GetMessages(Chat chat, CancellationToken cancellationToken)
+        public async IAsyncEnumerable<Message> GetMessagesSince(Chat chat, DateTime time, CancellationToken cancellationToken)
         {
+            IEnumerable<Message> messages;
             if (_storage.ContainsKey(chat))
             {
-                return Task.FromResult<IEnumerable<Message>>(_storage[chat]);
+                messages =_storage[chat].Where(m => m.Timestamp > time).OrderBy(m => m.Timestamp);
             }
             else
             {
-                return Task.FromResult<IEnumerable<Message>>(new Message[0]);
+                messages = [];
+            }
+
+            foreach (var message in messages)
+            {
+                yield return message;
+            }
+        }
+
+        public async IAsyncEnumerable<Chat> GetChats(CancellationToken cancellationToken)
+        {
+            foreach (var chat in _storage.Keys)
+            {
+                yield return chat;
             }
         }
 

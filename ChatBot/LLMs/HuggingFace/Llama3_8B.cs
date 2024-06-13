@@ -33,7 +33,7 @@ namespace ChatBot.LLMs.HuggingFace
             };
         }
 
-        public async Task<string> GenerateResponseAsync(string prompt, CancellationToken cancellationToken, Chat chat)
+        public async Task<string> GenerateResponseAsync(string prompt, AccountingInfo? accountingInfo, CallSettings? settings, CancellationToken cancellationToken)
         {
             // do a POST request with llmInput.ToString() as the input
             JsonContent content = JsonContent.Create(new { inputs = prompt });

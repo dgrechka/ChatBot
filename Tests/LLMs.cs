@@ -43,13 +43,13 @@ namespace LLMs
 
             var input = formatter.FormatConversation(messages, true);
 
-            Assert.Equal(@"<|start_header_id|>user - 2024-06-05 14:04:04Z Wed<|end_header_id|>
+            Assert.Equal(@"<|start_header_id|>user at 2024-06-05 14:04:04Z (Wed)<|end_header_id|>
 
-How are you?<|eot_id|><|start_header_id|>assistant - 2024-06-05 14:04:05Z Wed<|end_header_id|>
+How are you?<|eot_id|><|start_header_id|>assistant at 2024-06-05 14:04:05Z (Wed)<|end_header_id|>
 
-I'm fine<|eot_id|><|start_header_id|>user - 2024-06-05 14:05:04Z Wed<|end_header_id|>
+I'm fine<|eot_id|><|start_header_id|>user at 2024-06-05 14:05:04Z (Wed)<|end_header_id|>
 
-See you<|eot_id|><|start_header_id|>assistant - 2024-06-05 14:05:05Z Wed<|end_header_id|>
+See you<|eot_id|><|start_header_id|>assistant at 2024-06-05 14:05:05Z (Wed)<|end_header_id|>
 
 ".Replace("\r\n","\n"), input);
         }

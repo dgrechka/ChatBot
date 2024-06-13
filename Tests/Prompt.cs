@@ -87,7 +87,7 @@ namespace Prompt
 
             var compiler = new ChatBot.Prompt.Compiler(null, new List<ITemplateSource> {templateSourceMock.Object});
 
-            var result = await compiler.CompilePrompt("abc", CancellationToken.None);
+            var result = await compiler.CompilePrompt("abc", null, CancellationToken.None);
 
             Assert.Equal("Abc references [De references |Fghi references (Jkl references nothing.).|.] and [Fghi references (Jkl references nothing.).].", result);
         }

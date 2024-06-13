@@ -92,7 +92,7 @@ namespace ChatBot.LLMs.DeepInfra
 
         }
 
-        public async Task<string> GenerateResponseAsync(string prompt, CancellationToken cancellationToken, Chat chat)
+        public async Task<string> GenerateResponseAsync(string prompt, AccountingInfo? accountingInfo, CallSettings? callSettings, CancellationToken cancellationToken)
         {
             var request = new InferenceRequest
             {
@@ -100,10 +100,15 @@ namespace ChatBot.LLMs.DeepInfra
                 MaxNewTokens = _settings.MaxTokens,
             };
 
+            if(callSettings?.StopStrings != null)
+            {
+                request.Stop = callSettings.StopStrings.ToArray();
+            }
+
             var response = await GenerateResponseAsync(request, cancellationToken);
             _logger?.LogInformation($"InputTokens: {response.Status.TokensInput}; OutputTokens: {response.Status.TokensGenerated}; Cost: {response.Status.Cost}; RuntimeMs: {response.Status.RuntimeMs}");
 
-            _billingLogger?.LogLLMCost(chat.ToString(), "DeepInfra", _settings.ModelName, response.Status.TokensInput, response.Status.TokensGenerated, response.Status.Cost, "USD", cancellationToken);
+            _billingLogger?.LogLLMCost(accountingInfo, "DeepInfra", _settings.ModelName, response.Status.TokensInput, response.Status.TokensGenerated, response.Status.Cost, "USD", cancellationToken);
 
             return response.Results[0].GeneratedText;
         }

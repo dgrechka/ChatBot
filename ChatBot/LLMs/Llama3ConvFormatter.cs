@@ -47,7 +47,7 @@ namespace ChatBot.LLMs
         {
             if (timestamp.HasValue)
             {
-                return timestamp.Value.ToString(" - yyyy-MM-dd HH:mm:ssZ ddd", CultureInfo.InvariantCulture);
+                return " at "+timestamp.Value.ToString("yyyy-MM-dd HH:mm:ssZ (ddd)", CultureInfo.InvariantCulture);
             }
             else
             {

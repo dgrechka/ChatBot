@@ -14,7 +14,7 @@ namespace ChatBot.Prompt
     }
     public interface IPromptCompiler
     {
-        Task<string> CompilePrompt(string keyToCompile, CancellationToken cancellationToken);
+        Task<string> CompilePrompt(string keyToCompile, Dictionary<string,string>? additionalContext, CancellationToken cancellationToken);
     }
 
     public class Compiler: IPromptCompiler
@@ -28,9 +28,17 @@ namespace ChatBot.Prompt
             _logger = logger;
         }
 
-        public async Task<string> CompilePrompt(string keyToCompile, CancellationToken cancellationToken)
+        public async Task<string> CompilePrompt(string keyToCompile, Dictionary<string, string>? additionalContext, CancellationToken cancellationToken)
         {
             var sw = new System.Diagnostics.Stopwatch();
+
+            var effectiveTemplateSources = _templateSources;
+            if(additionalContext != null)
+            {
+                var runtimeTemplateSource = new DictionaryTemplateSource(additionalContext);
+                effectiveTemplateSources = _templateSources.Append(runtimeTemplateSource);
+            }
+
             // 1. forward pass. gather dependencies starting with keyToCompile, and build the dependencies graph
             Dictionary<string, HashSet<string>> dependencies = new();
             Dictionary<string, HashSet<string>> dependents = new();
@@ -47,7 +55,7 @@ namespace ChatBot.Prompt
                 }
                 _logger?.LogDebug($"Processing {key}");
 
-                foreach (var source in _templateSources)
+                foreach (var source in effectiveTemplateSources)
                 {
                     if(await source.HasKey(key))
                     {

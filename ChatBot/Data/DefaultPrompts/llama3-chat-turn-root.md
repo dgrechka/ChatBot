@@ -1,1 +1,3 @@
-﻿<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n◄system-prompt►<|eot_id|>◄llm-formatted-recent-messages-with-reply-primer►
+﻿<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+◄system-prompt►<|eot_id|>◄llm-formatted-recent-messages-with-reply-primer►
