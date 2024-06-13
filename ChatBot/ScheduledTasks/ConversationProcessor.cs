@@ -60,7 +60,8 @@ namespace ChatBot.ScheduledTasks
                 if (now - message.Timestamp < _settings.IdleConversationInterval)
                 {
                     // the conversation is still ongoing. will not process it yet
-                    continue;
+                    conversation.Clear();
+                    break;
                 }
 
                 if (conversation.Count != 0 && message.Timestamp - prevMessageTime > _settings.IdleConversationInterval)
