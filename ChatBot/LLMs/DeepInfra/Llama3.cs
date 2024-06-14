@@ -38,12 +38,18 @@ namespace ChatBot.LLMs.DeepInfra
         {
             [JsonPropertyName("input")]
             public string Input { get; set; }
-
+            
             [JsonPropertyName("max_new_tokens")]
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public int? MaxNewTokens { get; set; } = null;
 
+            [JsonPropertyName("stop")]
             public string[] Stop { get; set; } = new string[] { "<|eot_id|>" };
+
+            [JsonPropertyName("temperature")]
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public double? Temperature { get; set; } = 0.7;
+
         }
 
         public class InferenceResponse
@@ -103,6 +109,11 @@ namespace ChatBot.LLMs.DeepInfra
             if(callSettings?.StopStrings != null)
             {
                 request.Stop = callSettings.StopStrings.ToArray();
+            }
+
+            if(callSettings?.Temperature != null)
+            {
+                request.Temperature = callSettings.Temperature;
             }
 
             var response = await GenerateResponseAsync(request, cancellationToken);

@@ -21,6 +21,7 @@ namespace ChatBot.LLMs
 
     public class CallSettings {
         public List<string> StopStrings { get; set; } = new();
+        public double? Temperature { get; set; }
     }
 
     public interface ILLM
