@@ -30,7 +30,7 @@ The following conversation contains the information that should be used to updat
 
 Your task is to output JSON object.
 
-## STructure 
+## Structure 
 The JSON schema is a flat (string -> string) dictionary. Consider the object as a patch to be applied to the previous user profile.
 The object **may** contain the fields described before. It **must not** contain any other fields.
 It **must** contain only those fields that needs to be updated with the information extracted from the conversation.
@@ -45,7 +45,7 @@ The exception can be moving the information from one field to another, if anothe
 Do not include "N/A", "unknown" or other similar values, just omit the data in this case.
 If some field becomes too long (>1000 chars), you may aggregate the field information and replace part of it 
 
-Now generate the JSON file with user profile update. Omit any header, just providing the JSON object.
+Now generate the JSON file with user profile update. Omit any header, just start providing the JSON object.
 
 ```json
 <|eot_id|><|start_header_id|>assistant<|end_header_id|>

@@ -90,11 +90,22 @@ namespace ChatBot.ScheduledTasks
 
                 var prompt = await _promptCompiler.CompilePrompt("llama3-user-profile-updater", runtimeTemplates, cancellationToken);
 
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < 5; i++)
                 {
-                    _logger?.LogInformation($"Attempt #{i+1} to generate user profile update for chat {_context.Chat}");
+                    // that to to workaround the cases when the model generates something in addition to JSON
+                    callSettings.Temperature = i switch
+                    {
+                        0 => 0.7, // default llama3 val
+                        1 => 0.5,
+                        2 => 0.3,
+                        3 => 0.8,
+                        4 => 1.0,
+                    };
+
+                    _logger?.LogInformation($"Attempt #{i+1} to generate user profile update for chat {_context.Chat}. Temperature {callSettings.Temperature}");
                     var summary = await _llm.GenerateResponseAsync(prompt, accountingInfo, callSettings, cancellationToken);
 
+                 
                     try
                     {
                         // decoding the JSON summary
