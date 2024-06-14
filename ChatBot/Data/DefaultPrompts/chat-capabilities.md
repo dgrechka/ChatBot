@@ -1,4 +1,4 @@
-﻿You have the following capabilities enabled (the prompt is prepeared using this data):
+﻿You have the following capabilities enabled (the prompt is prepared using this data):
 * Limited memory for the conversation (about an hour of dialog).
 * Timestamp info attached to each of the message
   * Use this info if it is appropriate/relevant. If the user refers to *now* you should use the latest timestamp.

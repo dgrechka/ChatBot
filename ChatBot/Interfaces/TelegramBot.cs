@@ -22,7 +22,7 @@ namespace ChatBot.Interfaces
     {
         private readonly TelegramBotClient _bot;
         private readonly ILogger<TelegramBot>? _logger;
-        private readonly ILLM _llm;
+        private readonly ITextGenerationLLMFactory _llmFactory;
         private readonly IPromptCompiler _promptCompiler;
         private readonly IChatHistoryWriter _chatHistoryWriter;
         private readonly IConversationProcessingScheduler _conversationProcessor;
@@ -38,12 +38,12 @@ namespace ChatBot.Interfaces
             IConversationProcessingScheduler conversationProcessor,
             IChatHistoryWriter chatHistoryWriter,
             TelegramBotSettings settings,
-            ILLM llm)
+            ITextGenerationLLMFactory llmFactory)
         {
             _serviceScopeFactory = serviceScopeFactory;
             _bot = new TelegramBotClient(settings.AccessToken);
             _logger = logger;
-            _llm = llm;
+            _llmFactory = llmFactory;
             _chatHistoryWriter = chatHistoryWriter;
             _conversationProcessor = conversationProcessor;
         }
@@ -61,8 +61,11 @@ namespace ChatBot.Interfaces
 
             using (var scope = _serviceScopeFactory.CreateAsyncScope())
             {
+                var _llm = _llmFactory.CreateLLM(TextGenerationLLMRole.ChatTurn);
+
                 var userMessageContext = scope.ServiceProvider.GetRequiredService<Prompt.UserMessageContext>();
                 userMessageContext.Chat = chat;
+                userMessageContext.ActiveModel = _llm.Model;
                 var userMessage = new Message
                 {
                     Author = Author.User,

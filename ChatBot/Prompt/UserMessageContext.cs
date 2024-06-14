@@ -11,5 +11,6 @@ namespace ChatBot.Prompt
     {
         public Message Message { get; set; }
         public Chat Chat { get; set; }
+        public TextCompletionModels? ActiveModel { get; set; }
     }
 }

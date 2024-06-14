@@ -18,7 +18,7 @@ namespace ChatBot.ScheduledTasks
         protected readonly ISummaryStorage _summaryStorage;
         private readonly IChatHistoryReader _chatHistoryReader;
         private readonly IPromptCompiler _promptCompiler;
-        private readonly ILLM _llm;
+        private readonly ITextGenerationLLM _llm;
         private readonly UserMessageContext _context;
         private readonly ConversationProcessingSettings _settings;
         private readonly ILogger<PersonalityTraitsExtractorScoped>? _logger;
@@ -30,7 +30,7 @@ namespace ChatBot.ScheduledTasks
             ConversationProcessingSettings settings,
             UserMessageContext context,
             ILogger<PersonalityTraitsExtractorScoped>? logger,
-            ILLM llm)
+            ITextGenerationLLM llm)
         {
             _promptCompiler = promptCompiler;
             _llm = llm;

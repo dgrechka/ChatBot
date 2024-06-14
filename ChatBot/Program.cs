@@ -68,57 +68,29 @@ namespace ChatBot
                 logger.LogInformation($"{settings.Prompts?.Inline.Count} prompt templates loaded from .NET configuration");
             }
 
-            if (settings.LLM?.HuggingFace != null)
+            if(settings.Models == null)
             {
-                if(string.IsNullOrWhiteSpace(settings.LLM.HuggingFace.ApiKey))
-                {
-                    logger.LogCritical("HuggingFace API key is not set");
-                    Environment.Exit(1);
-                }
-
-                if (settings.LLM.HuggingFace.ModelName == "Meta-Llama-3-8B-Instruct") {
-                    builder.Services
-                        .AddSingleton<ILLM, LLMs.HuggingFace.Llama3_8B>((p) => new LLMs.HuggingFace.Llama3_8B(settings.LLM.HuggingFace.ApiKey));
-                    logger.LogInformation("HuggingFace Llama3_8B is enabled");
-                } else
-                {
-                    logger.LogCritical("Unsupported HuggingFace model name: {0}", settings.LLM.HuggingFace.ModelName);
-                    Environment.Exit(1);
-                }
+                logger.LogCritical("Models are not configured");
+                Environment.Exit(1);
             }
 
-            if (settings.LLM?.DeepInfra != null)
+            builder.Services.AddSingleton(settings.Models);
+
+            if(settings.ModelProviders == null)
             {
-                if (string.IsNullOrWhiteSpace(settings.LLM.DeepInfra.ApiKey))
-                {
-                    logger.LogCritical("DeepInfra API key is not set");
-                    Environment.Exit(1);
-                }
-
-                var modelFlavor = settings.LLM.DeepInfra?.ModelName switch
-                {
-                    "Llama-3-8B-Instruct" => LLMs.DeepInfra.Llama3Flavor.Instruct_8B,
-                    "Llama-3-70B-Instruct" => LLMs.DeepInfra.Llama3Flavor.Instruct_70B,
-                    _ => throw new NotSupportedException($"Unsupported DeepInfra model name: {settings.LLM.DeepInfra?.ModelName ?? string.Empty}")
-                };
-
-                builder.Services
-                    .AddSingleton<ILLM, LLMs.DeepInfra.Llama3Client>((p) => new LLMs.DeepInfra.Llama3Client(
-                        p.GetRequiredService<ILogger<LLMs.DeepInfra.Llama3Client>>(),
-                        p.GetRequiredService<IBillingLogger>(),
-                        settings.LLM.DeepInfra.ApiKey,
-                        settings.LLM.DeepInfra.MaxTokensToGenerate,
-                        modelFlavor
-                        ))
-                    // transient ensures that the timestamps is correct
-                    .AddTransient<IConversationFormatter,Llama3ConvFormatter>(p => new Llama3ConvFormatter(settings?.UseMessageTimestamps ?? false, DateTime.UtcNow));
-                logger.LogInformation("DeepInfra Llama3Client is enabled (flavor {0}; max tokens {1})", modelFlavor, settings.LLM.DeepInfra.MaxTokensToGenerate);
+                logger.LogCritical("Model providers are not configured");
+                Environment.Exit(1);
             }
+
+            builder.Services.AddSingleton(settings.ModelProviders);
+            builder.Services.AddSingleton<ITextGenerationLLMFactory, TextGenerationLLMFactory>();
+            builder.Services.AddTransient<IConversationFormatterFactory, ConversationFormatterFactoryTransient>();
 
             if (settings?.UseMessageTimestamps ?? false) {
                 logger.LogInformation("Message timestamps are enabled");
             } else {
-                logger.LogInformation("Message timestamps are disabled");
+                logger.LogCritical("Message timestamps are disabled. not supported");
+                Environment.Exit(1);
             }
 
             if (settings.Persistence?.Postgres != null)

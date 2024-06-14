@@ -14,7 +14,7 @@ namespace ChatBot.ScheduledTasks
     public class GeneralSummaryExtractorScoped : ConversationProcessorScoped
     {
         private readonly IPromptCompiler _promptCompiler;
-        private readonly ILLM _llm;
+        private readonly ITextGenerationLLM _llm;
 
         public GeneralSummaryExtractorScoped(
             ILogger<ConversationProcessorScoped> logger,
@@ -22,7 +22,7 @@ namespace ChatBot.ScheduledTasks
             IChatHistoryReader chatHistoryReader,
             IPromptCompiler promptCompiler,
             UserMessageContext context,
-            ILLM llm,
+            ITextGenerationLLM llm,
             ConversationProcessingSettings settings)
             : base(logger, summaryStorage, chatHistoryReader, settings, context, "Summary")
         {

@@ -1,3 +1,4 @@
+using ChatBot;
 using Moq;
 using DI = ChatBot.LLMs.DeepInfra;
 
@@ -21,7 +22,7 @@ namespace DeepInfra
         [Trait(Attributes.RequiresApiKeys,"true")]
         public async Task ResponseGenerated()
         {
-            using DI.Llama3Client llama3_8B = new DI.Llama3Client(null, null, _deepinfra_apikey, 32, DI.Llama3Flavor.Instruct_8B);
+            using DI.TextGenerationClient llama3_8B = new DI.TextGenerationClient(null, null, _deepinfra_apikey, TextCompletionModels.Llama3_8B_instruct);
 
             var prompt = @"<|begin_of_text|><|start_header_id|>system<|end_header_id|>
 
@@ -46,7 +47,7 @@ What's your name?<|eot_id|><|start_header_id|>assistant<|end_header_id|>
         [Trait(Attributes.RequiresApiKeys, "true")]
         public async Task PriorMessageIsInContext()
         {
-            using DI.Llama3Client llama3_8B = new DI.Llama3Client(null, null, _deepinfra_apikey, 32, DI.Llama3Flavor.Instruct_8B);
+            using DI.TextGenerationClient llama3_8B = new DI.TextGenerationClient(null, null, _deepinfra_apikey, TextCompletionModels.Llama3_8B_instruct);
 
             var prompt = @"<|begin_of_text|><|start_header_id|>system<|end_header_id|>
 

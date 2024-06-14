@@ -9,30 +9,31 @@ using System.Threading.Tasks;
 
 namespace ChatBot.LLMs.DeepInfra
 {
-    public enum Llama3Flavor { Instruct_70B, Instruct_8B }
-
-    public class Llama3Client : InferenceClient<Llama3Client.InferenceRequest, Llama3Client.InferenceResponse>, ILLM
+    public class TextGenerationClient : InferenceClient<TextGenerationClient.InferenceRequest, TextGenerationClient.InferenceResponse>, ITextGenerationLLM
     {
         protected readonly IBillingLogger? _billingLogger;
-        public Llama3Client(
-            ILogger<Llama3Client>? logger,
+        protected readonly TextCompletionModels _flavor;
+        public TextGenerationClient(
+            ILogger<ITextGenerationLLM>? logger,
             IBillingLogger? billingLogger,
             string apikey,
-            int maxTokens,
-            Llama3Flavor flavor = Llama3Flavor.Instruct_8B)
+            TextCompletionModels flavor = TextCompletionModels.Llama3_8B_instruct)
             : base(logger,new DeepInfraInferenceClientSettings() {
                 ApiKey = apikey,
-                MaxTokens = maxTokens,
                 ModelName = flavor switch
                 {
-                    Llama3Flavor.Instruct_8B => "meta-llama/Meta-Llama-3-8B-Instruct",
-                    Llama3Flavor.Instruct_70B => "meta-llama/Meta-Llama-3-70B-Instruct",
+                    TextCompletionModels.Llama3_8B_instruct => "meta-llama/Meta-Llama-3-8B-Instruct",
+                    TextCompletionModels.Llama3_70B_instruct => "meta-llama/Meta-Llama-3-70B-Instruct",
+                    TextCompletionModels.Qwen2_72B_instruct => "Qwen/Qwen2-72B-Instruct",
                     _ => throw new ArgumentException("Invalid Llama3 flavor", nameof(flavor))
                 }
             })
         {
             _billingLogger = billingLogger;
+            _flavor = flavor;
         }
+
+        public TextCompletionModels Model => _flavor;
 
         public class InferenceRequest
         {

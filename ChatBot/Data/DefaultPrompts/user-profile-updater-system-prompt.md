@@ -1,0 +1,1 @@
+﻿Finish the text string provided by the user. Finish it by following the instructions in the user message. Your generated text will be concatenated to the user message.Finish the text string provided by the user. Finish it by following the instructions in the user message. Your generated text will be concatenated to the user message.

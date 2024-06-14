@@ -10,13 +10,15 @@ using System.Threading.Tasks;
 
 namespace ChatBot.LLMs.HuggingFace
 {
-    public class Llama3_8B : ILLM, IDisposable
+    public class Llama3_8B : ITextGenerationLLM, IDisposable
     {
         class HuggingFaceReply
         {
             [JsonPropertyName("generated_text")]
             public string GeneratedText { get; set; }
         }
+
+        public TextCompletionModels Model => TextCompletionModels.Llama3_8B_instruct;
 
         private readonly HttpClient _httpClient;
 
