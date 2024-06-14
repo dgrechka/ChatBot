@@ -9,7 +9,7 @@ namespace ChatBot.Prompt
 {
     public class InlineConfigUserSpecificScopedTemplateSource : ITemplateSource
     {
-        public static string TemplateKey => "user-specific-prompt";
+        public static string TemplateKey => "user-basic-introduction";
 
         private readonly Dictionary<string, string> _inlineConfig;
         private readonly UserMessageContext _userMessageContext;
@@ -36,7 +36,7 @@ namespace ChatBot.Prompt
                 else
                 {
                     _logger?.LogInformation($"No user-specific prompt found for chat {_userMessageContext.Chat}. Using stranger prompt");
-                    return Task.FromResult(_inlineConfig["unknown-user-prompt"]);
+                    return Task.FromResult("◄unknown-user-prompt►");
                 }
             }
             throw new ArgumentException($"Key {key} not found in inline config");

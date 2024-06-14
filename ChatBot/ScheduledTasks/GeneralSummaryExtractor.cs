@@ -11,12 +11,12 @@ using System.Threading.Tasks;
 
 namespace ChatBot.ScheduledTasks
 {
-    public class GeneralSummaryProcessorScoped : ConversationProcessorScoped
+    public class GeneralSummaryExtractorScoped : ConversationProcessorScoped
     {
         private readonly IPromptCompiler _promptCompiler;
         private readonly ILLM _llm;
 
-        public GeneralSummaryProcessorScoped(
+        public GeneralSummaryExtractorScoped(
             ILogger<ConversationProcessorScoped> logger,
             ISummaryStorage summaryStorage,
             IChatHistoryReader chatHistoryReader,
@@ -32,30 +32,16 @@ namespace ChatBot.ScheduledTasks
 
         protected override async Task ProcessCore(IEnumerable<Message> conversation, CancellationToken cancellationToken)
         {
-            StringBuilder convSB = new();
-            bool first = true;
-            DateTime? firstMessageTime = null;
-            DateTime? lastMessageTime = null;
-            int counter = 0;
-            foreach (var message in conversation)
-            {
-                if (first)
-                {
-                    convSB.AppendLine($"[start of conversation at {FormatTimestamp(message.Timestamp)}]");
-                    firstMessageTime = message.Timestamp;
-                    first = false;
-                }
 
-                convSB.AppendLine($"{message.Author}:\t{message.Content}\n");
-                lastMessageTime = message.Timestamp;
-                counter++;
-            }
-
-            convSB.AppendLine($"[end of conversation at {FormatTimestamp(lastMessageTime) ?? string.Empty}]");
+            var formattedConversation = Helpers.FormatConversation(
+                conversation,
+                out DateTime? firstMessageTime,
+                out DateTime? lastMessageTime,
+                out int counter);
 
             var runtimeTemplates = new Dictionary<string, string>
             {
-                { "conversation-to-process", convSB.ToString() }
+                { "conversation-to-process", formattedConversation.ToString() }
             };
 
             var prompt = await _promptCompiler.CompilePrompt("llama3-conversation-summary", runtimeTemplates,  cancellationToken);
@@ -68,26 +54,15 @@ namespace ChatBot.ScheduledTasks
 
             var summary = await _llm.GenerateResponseAsync(prompt, accountingInfo, callSettings, cancellationToken);
 
-            var summaryHeader = $"The conversation started at {FormatTimestamp(firstMessageTime)},\nlasted for {Math.Round((lastMessageTime-firstMessageTime).Value.TotalMinutes)} minutes and consisted of {counter} messages.\n\n";
+            var summaryHeader = $"The conversation started at {Helpers.FormatTimestamp(firstMessageTime)},\nlasted for {Math.Round((lastMessageTime-firstMessageTime).Value.TotalMinutes)} minutes and consisted of {counter} messages.\n\n";
 
             var wholeSummary = summaryHeader + summary;
 
             _logger?.LogInformation($"Generated summary for conversation with {counter} messages. generated length {wholeSummary.Length}");
 
+            _logger?.LogDebug(wholeSummary);
             // save summary to storage
             await _summaryStorage.SaveSummary(_context.Chat, _summaryId, lastMessageTime.Value, wholeSummary, cancellationToken);
-        }
-
-        private static string FormatTimestamp(DateTime? timestamp)
-        {
-            if (timestamp.HasValue)
-            {
-                return timestamp.Value.ToString("yyyy-MM-dd HH:mm:ssZ (ddd)", CultureInfo.InvariantCulture);
-            }
-            else
-            {
-                return string.Empty;
-            }
         }
     }
 }

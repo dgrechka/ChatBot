@@ -6,12 +6,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ChatBot.ScheduledTasks
 {
+    public class Summary {
+        public DateTime Time { get; set; }
+        public string Content { get; set; }
+    }
+
     public interface ISummaryStorage {
-        Task<DateTime?> GetLatestSummary(Chat chat, string summaryId, CancellationToken cancellationToken);
+        Task<Summary?> GetLatestSummary(Chat chat, string summaryId, CancellationToken cancellationToken);
 
         IAsyncEnumerable<Chat> GetChatsWithSummaries(string summaryId, CancellationToken cancellationToken);
 
@@ -47,37 +53,11 @@ namespace ChatBot.ScheduledTasks
         {
             var latestSummary = await _summaryStorage.GetLatestSummary(_context.Chat, _summaryId, cancellationToken);
             // we fetch all messages that appear after the last summary
-            var messages = _chatHistoryReader.GetMessagesSince(_context.Chat, latestSummary ?? DateTime.MinValue, cancellationToken);
+            var messages = _chatHistoryReader.GetMessagesSince(_context.Chat, latestSummary?.Time ?? DateTime.MinValue, cancellationToken);
 
-            // then we cluster them based on their timestamp
-            List<Message> conversation = new();
-            DateTime? prevMessageTime = null;
-
-            var now = DateTime.UtcNow;
-
-            await foreach (var message in messages)
+            await foreach (var conversation in Helpers.ClusterConversations(messages, _settings.IdleConversationInterval))
             {
-                if (now - message.Timestamp < _settings.IdleConversationInterval)
-                {
-                    // the conversation is still ongoing. will not process it yet
-                    conversation.Clear();
-                    break;
-                }
-
-                if (conversation.Count != 0 && message.Timestamp - prevMessageTime > _settings.IdleConversationInterval)
-                {
-                    // process the conversation
-                    await ProcessCore(conversation, cancellationToken);
-                    conversation.Clear();
-                }
-
-                conversation.Add(message);
-                prevMessageTime = message.Timestamp;
-            }
-
-            if (conversation.Count != 0)
-            {
-                await ProcessCore(conversation, cancellationToken);
+                await ProcessConversation(conversation, cancellationToken);
             }
         }
 
@@ -86,7 +66,7 @@ namespace ChatBot.ScheduledTasks
             var sw = System.Diagnostics.Stopwatch.StartNew();
             await ProcessCore(conversation, cancellationToken);
             sw.Stop();
-            _logger.LogInformation($"{_summaryId} :Processed conversation in {_context.Chat} of {conversation.Count} messages ({conversation[0].Timestamp} - {conversation[conversation.Count-1].Timestamp}) in {sw.ElapsedMilliseconds}ms");
+            _logger.LogInformation($"{_summaryId}: Processed conversation in {_context.Chat} of {conversation.Count} messages ({conversation[0].Timestamp} - {conversation[^1].Timestamp}) in {sw.ElapsedMilliseconds}ms");
         }
 
         protected abstract Task ProcessCore(IEnumerable<Message> conversation, CancellationToken cancellationToken);
