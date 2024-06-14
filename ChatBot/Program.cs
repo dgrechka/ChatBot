@@ -156,6 +156,7 @@ namespace ChatBot
                 if(settings.ConversationProcessing.UserProfileProperties != null)
                 {
                     builder.Services.AddScoped<IConversationProcessor, PersonalityTraitsExtractorScoped>();
+                    builder.Services.AddScoped<ITemplateSource, LearnedUserProfileTemplateSourceScoped>();
                     logger.LogInformation("Personality traits conversation processing is enabled");
                 }
             }

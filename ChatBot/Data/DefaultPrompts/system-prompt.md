@@ -1,1 +1,5 @@
-﻿◄bot-specific-prompt►	◄user-specific-prompt►
+﻿◄bot-specific-prompt►
+
+◄user-basic-introduction►
+
+◄learned-user-profile►
