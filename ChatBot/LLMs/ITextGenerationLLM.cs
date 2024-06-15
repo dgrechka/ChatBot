@@ -30,5 +30,12 @@ namespace ChatBot.LLMs
         Task<string> GenerateResponseAsync(string prompt, AccountingInfo? accountingInfo, CallSettings? callSettings, CancellationToken cancellationToken);
 
         public TextCompletionModels Model { get; }
+
+        /// <summary>
+        /// Can be used as a part of placeholder to distinguish different prompt formats required for different models (e.g. llama3, qwen2, etc.)
+        /// </summary>
+        public string PromptFormatIdentifier { get; }
+
+        public string[] DefaultStopStrings { get; }
     }
 }

@@ -18,7 +18,7 @@ namespace ChatBot.ScheduledTasks
         protected readonly ISummaryStorage _summaryStorage;
         private readonly IChatHistoryReader _chatHistoryReader;
         private readonly IPromptCompiler _promptCompiler;
-        private readonly ITextGenerationLLM _llm;
+        private readonly ITextGenerationLLMFactory _llmFactory;
         private readonly UserMessageContext _context;
         private readonly ConversationProcessingSettings _settings;
         private readonly ILogger<PersonalityTraitsExtractorScoped>? _logger;
@@ -30,10 +30,10 @@ namespace ChatBot.ScheduledTasks
             ConversationProcessingSettings settings,
             UserMessageContext context,
             ILogger<PersonalityTraitsExtractorScoped>? logger,
-            ITextGenerationLLM llm)
+            ITextGenerationLLMFactory llmFactory)
         {
             _promptCompiler = promptCompiler;
-            _llm = llm;
+            _llmFactory = llmFactory;
             _chatHistoryReader = chatHistoryReader;
             _summaryStorage = summaryStorage;
             _settings = settings;
@@ -55,7 +55,7 @@ namespace ChatBot.ScheduledTasks
 
             var propertyValues = await Task.WhenAll(propertyKeys.Select(key => _summaryStorage.GetLatestSummary(_context.Chat, "UserProfile" + key, cancellationToken)));
 
-            Dictionary<string,string> userProfile = new();
+            Dictionary<string, string> userProfile = new();
 
             for (int i = 0; i < propertyKeys.Count; i++)
             {
@@ -66,7 +66,7 @@ namespace ChatBot.ScheduledTasks
             {
                 { "user-profile-fields-description", propertyDescriptions.ToString() },
             };
-            
+
             // we fetch all messages that appear after the last summary
             var messages = _chatHistoryReader.GetMessagesSince(_context.Chat, latestSummary?.Time ?? DateTime.MinValue, cancellationToken);
 
@@ -81,65 +81,55 @@ namespace ChatBot.ScheduledTasks
 
                 var userProfileJson = JsonSerializer.Serialize(userProfile, options: new JsonSerializerOptions() { WriteIndented = true });
                 runtimeTemplates["user-profile-json"] = userProfileJson;
-                
+
                 var accountingInfo = new AccountingInfo(_context.Chat, "ProfileUpdateInfoExtractor");
+                
+                var _llm = _llmFactory.CreateLLM(TextGenerationLLMRole.UserProfileUpdater);
+
                 var callSettings = new CallSettings()
                 {
-                    StopStrings = ["<|eot_id|>", "\n```"],
+                    StopStrings = [.._llm.DefaultStopStrings, "\n```"],
+                    ProduceJSON = true
                 };
 
-                var prompt = await _promptCompiler.CompilePrompt("llama3-user-profile-updater", runtimeTemplates, cancellationToken);
+                var prompt = await _promptCompiler.CompilePrompt($"{_llm.PromptFormatIdentifier}-user-profile-updater", runtimeTemplates, cancellationToken);
 
-                for (int i = 0; i < 5; i++)
+                _logger?.LogInformation($"Generating user profile update for chat {_context.Chat}.");
+                var summary = await _llm.GenerateResponseAsync(prompt, accountingInfo, callSettings, cancellationToken);
+
+                try
                 {
-                    // that to to workaround the cases when the model generates something in addition to JSON
-                    callSettings.Temperature = i switch
+                    // decoding the JSON summary
+                    var summaryJson = JsonSerializer.Deserialize<Dictionary<string, string>>(summary);
+                    foreach (var (key, value) in summaryJson)
                     {
-                        0 => 0.7, // default llama3 val
-                        1 => 0.5,
-                        2 => 0.3,
-                        3 => 0.8,
-                        4 => 1.0,
-                    };
-
-                    _logger?.LogInformation($"Attempt #{i+1} to generate user profile update for chat {_context.Chat}. Temperature {callSettings.Temperature}");
-                    var summary = await _llm.GenerateResponseAsync(prompt, accountingInfo, callSettings, cancellationToken);
-
-                 
-                    try
-                    {
-                        // decoding the JSON summary
-                        var summaryJson = JsonSerializer.Deserialize<Dictionary<string, string>>(summary);
-                        foreach (var (key,value) in summaryJson)
+                        if (!propertyKeys.Contains(key))
                         {
-                            if(!propertyKeys.Contains(key))
-                            {
-                                _logger?.LogWarning($"Generated user profile field {key} is not defined in the settings. Skipping");
-                                continue;
-                            }
-                            if(string.IsNullOrWhiteSpace(value) || value == userProfile[key])
-                            {
-                                _logger?.LogDebug($"Skipping update for {key} for {_context.Chat}. Empty or the same.");
-                                continue;
-                            }
-
-                            _logger?.LogDebug($"Saving update for {key} for {_context.Chat}: {summaryJson[key]}");
-
-                            await _summaryStorage.SaveSummary(_context.Chat, "UserProfile" + key, lastMessageTime.Value, value, cancellationToken);
-
-                            userProfile[key] = value;
+                            _logger?.LogWarning($"Generated user profile field {key} is not defined in the settings. Skipping");
+                            continue;
+                        }
+                        if (string.IsNullOrWhiteSpace(value) || value == userProfile[key])
+                        {
+                            _logger?.LogDebug($"Skipping update for {key} for {_context.Chat}. Empty or the same.");
+                            continue;
                         }
 
-                        await _summaryStorage.SaveSummary(_context.Chat, "UserProfileUpdate", lastMessageTime.Value, $"Updated {summaryJson.Count} fields: {string.Join(", ", summaryJson.Keys)}", cancellationToken);
+                        _logger?.LogDebug($"Saving update for {key} for {_context.Chat}: {summaryJson[key]}");
 
-                        _logger?.LogInformation($"Updated user profile ({summaryJson.Count} fields) for chat {_context.Chat}");
-                        break;
-                        
+                        await _summaryStorage.SaveSummary(_context.Chat, "UserProfile" + key, lastMessageTime.Value, value, cancellationToken);
+
+                        userProfile[key] = value;
                     }
-                    catch (JsonException e)
-                    {
-                        _logger?.LogError($"Error parsing JSON summary: {e.Message}");
-                    }
+
+                    await _summaryStorage.SaveSummary(_context.Chat, "UserProfileUpdate", lastMessageTime.Value, $"Updated {summaryJson.Count} fields: {string.Join(", ", summaryJson.Keys)}", cancellationToken);
+
+                    _logger?.LogInformation($"Updated user profile ({summaryJson.Count} fields) for chat {_context.Chat}");
+                    break;
+
+                }
+                catch (JsonException e)
+                {
+                    _logger?.LogError($"Error parsing JSON summary: {e.Message}");
                 }
             }
         }

@@ -38,7 +38,7 @@ namespace ChatBot.LLMs.DeepInfra
         {
             // do a POST request with request as the input
             JsonContent content = JsonContent.Create(request);
-            _logger?.LogInformation($"DeepInfraInferenceClient[{_settings.ModelName}]: Sending request. {_settings.MaxTokens} max tokens to generate.");
+            _logger?.LogInformation($"DeepInfraInferenceClient[{_settings.ModelName}]: Sending request. {_settings.MaxTokensToGenerate} max tokens to generate.");
             var sw = Stopwatch.StartNew();
             HttpResponseMessage response = await _httpClient.PostAsync("", content: content, cancellationToken);
             sw.Stop();
@@ -77,6 +77,6 @@ namespace ChatBot.LLMs.DeepInfra
         public string ModelName { get; set; }
         public string ApiKey { get; set; }
 
-        public int MaxTokens { get; set; } = 512;
+        public int MaxTokensToGenerate { get; set; } = 512;
     }
 }

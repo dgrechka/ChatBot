@@ -22,6 +22,10 @@ namespace ChatBot.LLMs.HuggingFace
 
         private readonly HttpClient _httpClient;
 
+        public string PromptFormatIdentifier => "llama3";
+
+        public string[] DefaultStopStrings => new string[] { "<|eot_id|>" };
+
         public Llama3_8B(string huggingFaceApiKey)
         {
             // create http client with base address and authorization bearer token

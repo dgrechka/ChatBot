@@ -19,19 +19,19 @@ namespace ChatBot.Prompt
 
         private readonly ILogger<RecentMessagesScopedTemplateSource>? _logger;
         private readonly IChatHistoryReader _chatHistory;
-        private readonly IConversationFormatter _conversationFormatter;
+        private readonly IConversationFormatterFactory _conversationFormatterFactory;
         private readonly UserMessageContext _userMessageContext;
 
         public RecentMessagesScopedTemplateSource(
             ILogger<RecentMessagesScopedTemplateSource>? logger,
             IChatHistoryReader chatHistory,
-            IConversationFormatter conversationFormatter,
+            IConversationFormatterFactory conversationFormatterFactory,
             UserMessageContext userMessageContext)
         {
             _logger = logger;
             _chatHistory = chatHistory;
             _userMessageContext = userMessageContext;
-            _conversationFormatter = conversationFormatter;
+            _conversationFormatterFactory = conversationFormatterFactory;
         }
 
         public async Task<string> GetValue(string key, CancellationToken cancellationToken)
@@ -50,7 +50,9 @@ namespace ChatBot.Prompt
 
             var prevMessagesWithCurrentMessage = prevMessages.Append(_userMessageContext.Message);
 
-            return _conversationFormatter.FormatConversation(prevMessagesWithCurrentMessage, addResponsePrimer: true);
+            var formatter = _conversationFormatterFactory.GetFormatter();
+
+            return formatter.FormatConversation(prevMessagesWithCurrentMessage, addResponsePrimer: true);
 
         }
 

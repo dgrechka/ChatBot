@@ -76,7 +76,9 @@ namespace ChatBot.Interfaces
 
                 var promptCompiler = scope.ServiceProvider.GetRequiredService<IPromptCompiler>();
 
-                var prompt = await promptCompiler.CompilePrompt("llama3-chat-turn-root", null, cancellationToken);
+                var prompt = await promptCompiler.CompilePrompt($"{_llm.PromptFormatIdentifier}-chat-turn-root", null, cancellationToken);
+
+                _logger?.LogDebug(prompt.ToString());
 
                 // send typing indicator
                 var typingTask = _bot.SendChatActionAsync(update.Message.Chat.Id, Telegram.Bot.Types.Enums.ChatAction.Typing, cancellationToken: cancellationToken);

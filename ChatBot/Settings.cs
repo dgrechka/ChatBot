@@ -15,7 +15,11 @@ namespace ChatBot
 
         public ModelsConfig? Models { get; set; }
 
-        public ModelProviderConfig[]? ModelProviders { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <remarks>Polymorphic deserialization does not work, this specifying exact type for now.</remarks>
+        public Dictionary<string, DeepInfraModelProviderConfig>? ModelProviders { get; set; }
 
         public PersistenceConfig? Persistence { get; set; }
 
@@ -29,7 +33,6 @@ namespace ChatBot
     [JsonPolymorphic(TypeDiscriminatorPropertyName ="Type")]
     [JsonDerivedType(typeof(DeepInfraModelProviderConfig), "DeepInfra")]
     public class ModelProviderConfig {
-        public string Name { get; set; }
         public string Type { get; set; }
     }
 

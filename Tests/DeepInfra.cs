@@ -22,7 +22,7 @@ namespace DeepInfra
         [Trait(Attributes.RequiresApiKeys,"true")]
         public async Task ResponseGenerated()
         {
-            using DI.TextGenerationClient llama3_8B = new DI.TextGenerationClient(null, null, _deepinfra_apikey, TextCompletionModels.Llama3_8B_instruct);
+            using DI.TextGenerationClient llama3_8B = new DI.TextGenerationClient(null, null, _deepinfra_apikey, 32, TextCompletionModels.Llama3_8B_instruct);
 
             var prompt = @"<|begin_of_text|><|start_header_id|>system<|end_header_id|>
 
@@ -47,7 +47,7 @@ What's your name?<|eot_id|><|start_header_id|>assistant<|end_header_id|>
         [Trait(Attributes.RequiresApiKeys, "true")]
         public async Task PriorMessageIsInContext()
         {
-            using DI.TextGenerationClient llama3_8B = new DI.TextGenerationClient(null, null, _deepinfra_apikey, TextCompletionModels.Llama3_8B_instruct);
+            using DI.TextGenerationClient llama3_8B = new DI.TextGenerationClient(null, null, _deepinfra_apikey, 32, TextCompletionModels.Llama3_8B_instruct);
 
             var prompt = @"<|begin_of_text|><|start_header_id|>system<|end_header_id|>
 

@@ -17,8 +17,10 @@ namespace ChatBot.LLMs.DeepInfra
             ILogger<ITextGenerationLLM>? logger,
             IBillingLogger? billingLogger,
             string apikey,
+            int maxTokensToGenerate,
             TextCompletionModels flavor = TextCompletionModels.Llama3_8B_instruct)
-            : base(logger,new DeepInfraInferenceClientSettings() {
+            : base(logger, new DeepInfraInferenceClientSettings()
+            {
                 ApiKey = apikey,
                 ModelName = flavor switch
                 {
@@ -26,7 +28,8 @@ namespace ChatBot.LLMs.DeepInfra
                     TextCompletionModels.Llama3_70B_instruct => "meta-llama/Meta-Llama-3-70B-Instruct",
                     TextCompletionModels.Qwen2_72B_instruct => "Qwen/Qwen2-72B-Instruct",
                     _ => throw new ArgumentException("Invalid Llama3 flavor", nameof(flavor))
-                }
+                },
+                MaxTokensToGenerate = maxTokensToGenerate
             })
         {
             _billingLogger = billingLogger;
@@ -35,17 +38,55 @@ namespace ChatBot.LLMs.DeepInfra
 
         public TextCompletionModels Model => _flavor;
 
+        public string PromptFormatIdentifier
+        {
+            get
+            {
+                return _flavor switch
+                {
+                    TextCompletionModels.Llama3_8B_instruct => "llama3",
+                    TextCompletionModels.Llama3_70B_instruct => "llama3",
+                    TextCompletionModels.Qwen2_72B_instruct => "qwen2",
+                    _ => throw new ArgumentException("Unsupported model", nameof(_flavor))
+                };
+            }
+        }
+
+        public string[] DefaultStopStrings {
+            get
+            {
+                switch (_flavor) {
+                    case TextCompletionModels.Llama3_8B_instruct:
+                    case TextCompletionModels.Llama3_70B_instruct:
+                        return new string[] { "<|eot_id|>" };
+                    case TextCompletionModels.Qwen2_72B_instruct:
+                        return new string[] { "\"<|im_start|>", "<|im_end|>", "</s>" };
+                    default:
+                        throw new ArgumentException("Unsupported model", nameof(_flavor));
+                }
+            }
+        }
+
+        public class ResponseFormat {
+            [JsonPropertyName("type")]
+            public string Type { get; set; }
+        }
+
         public class InferenceRequest
         {
             [JsonPropertyName("input")]
             public string Input { get; set; }
-            
+
             [JsonPropertyName("max_new_tokens")]
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public int? MaxNewTokens { get; set; } = null;
 
             [JsonPropertyName("stop")]
             public string[] Stop { get; set; } = new string[] { "<|eot_id|>" };
+
+            [JsonPropertyName("response_format")]
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public ResponseFormat? ResponseFormat { get; set; }
 
             [JsonPropertyName("temperature")]
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -104,15 +145,20 @@ namespace ChatBot.LLMs.DeepInfra
             var request = new InferenceRequest
             {
                 Input = prompt,
-                MaxNewTokens = _settings.MaxTokens,
+                MaxNewTokens = _settings.MaxTokensToGenerate,
             };
 
-            if(callSettings?.StopStrings != null)
+            if (callSettings?.StopStrings != null)
             {
                 request.Stop = callSettings.StopStrings.ToArray();
             }
 
-            if(callSettings?.Temperature != null)
+            if(callSettings?.ProduceJSON != null)
+            {
+                request.ResponseFormat = new ResponseFormat() { Type = "json_object" };
+            }
+
+            if (callSettings?.Temperature != null)
             {
                 request.Temperature = callSettings.Temperature;
             }

@@ -23,7 +23,7 @@ namespace ChatBot.LLMs
     public class TextGenerationLLMFactory : ITextGenerationLLMFactory
     {
         private readonly ModelsConfig _config;
-        private readonly ModelProviderConfig[] _modelProvidersConfigs;
+        private readonly Dictionary<string,DeepInfraModelProviderConfig> _modelProvidersConfigs;
 
         private readonly IBillingLogger? _billingLogger;
         private readonly ILogger<ITextGenerationLLM> _llmLogger;
@@ -31,7 +31,7 @@ namespace ChatBot.LLMs
 
         public TextGenerationLLMFactory(
             ModelsConfig config,
-            ModelProviderConfig[] modelProviderConfigs,
+            Dictionary<string, DeepInfraModelProviderConfig> modelProviderConfigs,
             IBillingLogger? billingLogger,
             ILogger<ITextGenerationLLM> llmLogger)
         {
@@ -61,10 +61,9 @@ namespace ChatBot.LLMs
                 throw new ArgumentException($"Model config for role {role} is not set");
             }
 
-            var modelProviderConfig = _modelProvidersConfigs.FirstOrDefault(c => c.Name == modelConfig.Provider);
-            if (modelProviderConfig == null)
+            if(!_modelProvidersConfigs.TryGetValue(modelConfig.Provider, out var modelProviderConfig))
             {
-                throw new ArgumentException($"Model provider {modelConfig.Provider} config for role {role} is configured");
+                throw new ArgumentException($"Model provider {modelConfig.Provider} config for role {role} is not found in the configuration");
             }
 
             switch(modelProviderConfig)
@@ -74,6 +73,7 @@ namespace ChatBot.LLMs
                         _llmLogger,
                         _billingLogger,
                         deepInfraModelProviderConfig.ApiKey,
+                        modelConfig.MaxTokensToGenerate ?? 512,
                         modelConfig.Model
                     );
                     break;
