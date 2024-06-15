@@ -1,4 +1,4 @@
-﻿using ChatBot.Prompt;
+﻿using ChatBot.LLMs;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -6,16 +6,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ChatBot.LLMs
+namespace ChatBot.Prompt
 {
-    public class Llama3ConvFormatter : IConversationFormatter
+    public class ConvFormatterQwen2 : IConversationFormatter
     {
-        private readonly bool _includeMessageTimestamps;
         private readonly DateTime? _currentTime;
 
-        public Llama3ConvFormatter(bool includeMessageTimestamps, DateTime? currentTime)
+        public ConvFormatterQwen2(DateTime currentTime)
         {
-            _includeMessageTimestamps = includeMessageTimestamps;
             _currentTime = currentTime;
         }
 
@@ -25,14 +23,13 @@ namespace ChatBot.LLMs
 
             foreach (Message message in messages)
             {
-                DateTime? effectiveTimestamp = _includeMessageTimestamps ? message.Timestamp : null;
-                llmInput.Append(FormatMessage(message.Author == Author.User ? "user" : "assistant", message.Content, effectiveTimestamp));
+                llmInput.Append(FormatMessage(message.Author == Author.User ? "user" : "assistant", message.Content, message.Timestamp));
             }
 
             // reply primer
             if (addResponsePrimer)
             {
-                llmInput.Append($"<|start_header_id|>assistant{FormatTimestamp(_currentTime)}<|end_header_id|>\n\n");
+                llmInput.Append($"<|im_start|>assistant{FormatTimestamp(_currentTime)}\n");
             }
 
             return llmInput.ToString();
@@ -40,14 +37,14 @@ namespace ChatBot.LLMs
 
         private static string FormatMessage(string author, string text, DateTime? timestamp)
         {
-            return $"<|start_header_id|>{author}{FormatTimestamp(timestamp)}<|end_header_id|>\n\n{text}<|eot_id|>"; ;
+            return $"<|im_start|>{author}{FormatTimestamp(timestamp)}\n{text}<|im_end|>\n";
         }
 
         private static string FormatTimestamp(DateTime? timestamp)
         {
             if (timestamp.HasValue)
             {
-                return " at "+timestamp.Value.ToString("yyyy-MM-dd HH:mm:ssZ (ddd)", CultureInfo.InvariantCulture);
+                return " at " + timestamp.Value.ToString("yyyy-MM-dd HH:mm:ssZ (ddd)", CultureInfo.InvariantCulture);
             }
             else
             {

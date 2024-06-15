@@ -43,8 +43,9 @@ namespace ChatBot
                 Environment.Exit(1);
             }
 
-            if (settings.TelegramBot != null) {
-                if(string.IsNullOrWhiteSpace(settings.TelegramBot.AccessToken))
+            if (settings.TelegramBot != null)
+            {
+                if (string.IsNullOrWhiteSpace(settings.TelegramBot.AccessToken))
                 {
                     logger.LogCritical("Telegram bot access token is not set");
                     Environment.Exit(1);
@@ -54,6 +55,9 @@ namespace ChatBot
                     .AddSingleton(settings.TelegramBot)
                     .AddHostedService<TelegramBot>();
                 logger.LogInformation("Telegram bot is enabled");
+            }
+            else {
+                logger.LogWarning("Telegram bot is not configured");
             }
 
             if (settings.Prompts?.Inline != null)
@@ -68,57 +72,31 @@ namespace ChatBot
                 logger.LogInformation($"{settings.Prompts?.Inline.Count} prompt templates loaded from .NET configuration");
             }
 
-            if (settings.LLM?.HuggingFace != null)
+            if(settings.Models == null)
             {
-                if(string.IsNullOrWhiteSpace(settings.LLM.HuggingFace.ApiKey))
-                {
-                    logger.LogCritical("HuggingFace API key is not set");
-                    Environment.Exit(1);
-                }
-
-                if (settings.LLM.HuggingFace.ModelName == "Meta-Llama-3-8B-Instruct") {
-                    builder.Services
-                        .AddSingleton<ILLM, LLMs.HuggingFace.Llama3_8B>((p) => new LLMs.HuggingFace.Llama3_8B(settings.LLM.HuggingFace.ApiKey));
-                    logger.LogInformation("HuggingFace Llama3_8B is enabled");
-                } else
-                {
-                    logger.LogCritical("Unsupported HuggingFace model name: {0}", settings.LLM.HuggingFace.ModelName);
-                    Environment.Exit(1);
-                }
+                logger.LogCritical("Models are not configured");
+                Environment.Exit(1);
             }
 
-            if (settings.LLM?.DeepInfra != null)
+            builder.Services.AddSingleton(settings.Models);
+
+            if(settings.ModelProviders == null)
             {
-                if (string.IsNullOrWhiteSpace(settings.LLM.DeepInfra.ApiKey))
-                {
-                    logger.LogCritical("DeepInfra API key is not set");
-                    Environment.Exit(1);
-                }
-
-                var modelFlavor = settings.LLM.DeepInfra?.ModelName switch
-                {
-                    "Llama-3-8B-Instruct" => LLMs.DeepInfra.Llama3Flavor.Instruct_8B,
-                    "Llama-3-70B-Instruct" => LLMs.DeepInfra.Llama3Flavor.Instruct_70B,
-                    _ => throw new NotSupportedException($"Unsupported DeepInfra model name: {settings.LLM.DeepInfra?.ModelName ?? string.Empty}")
-                };
-
-                builder.Services
-                    .AddSingleton<ILLM, LLMs.DeepInfra.Llama3Client>((p) => new LLMs.DeepInfra.Llama3Client(
-                        p.GetRequiredService<ILogger<LLMs.DeepInfra.Llama3Client>>(),
-                        p.GetRequiredService<IBillingLogger>(),
-                        settings.LLM.DeepInfra.ApiKey,
-                        settings.LLM.DeepInfra.MaxTokensToGenerate,
-                        modelFlavor
-                        ))
-                    // transient ensures that the timestamps is correct
-                    .AddTransient<IConversationFormatter,Llama3ConvFormatter>(p => new Llama3ConvFormatter(settings?.UseMessageTimestamps ?? false, DateTime.UtcNow));
-                logger.LogInformation("DeepInfra Llama3Client is enabled (flavor {0}; max tokens {1})", modelFlavor, settings.LLM.DeepInfra.MaxTokensToGenerate);
+                logger.LogCritical("Model providers are not configured");
+                Environment.Exit(1);
             }
+
+            builder.Services.AddSingleton(settings.ModelProviders);
+            builder.Services.AddSingleton<ITextGenerationLLMFactory, TextGenerationLLMFactory>();
+            builder.Services.AddTransient<IConversationFormatterFactory, ConversationFormatterFactoryTransient>(
+                p => new ConversationFormatterFactoryTransient(p.GetRequiredService<UserMessageContext>(), DateTime.UtcNow));
 
             if (settings?.UseMessageTimestamps ?? false) {
                 logger.LogInformation("Message timestamps are enabled");
             } else {
-                logger.LogInformation("Message timestamps are disabled");
+                // TODO: to support messages without timestamps implement corresponding conversation formatter. make factory to support them
+                logger.LogCritical("Message timestamps are disabled. not supported");
+                Environment.Exit(1);
             }
 
             if (settings.Persistence?.Postgres != null)
@@ -153,11 +131,15 @@ namespace ChatBot
                     logger.LogInformation("General summary conversation processing is enabled");
                 }
 
-                if(settings.ConversationProcessing.UserProfileProperties != null)
+                if (settings.ConversationProcessing.UserProfileProperties != null)
                 {
                     builder.Services.AddScoped<IConversationProcessor, PersonalityTraitsExtractorScoped>();
                     builder.Services.AddScoped<ITemplateSource, LearnedUserProfileTemplateSourceScoped>();
                     logger.LogInformation("Personality traits conversation processing is enabled");
+                }
+                else {
+                    logger.LogWarning("Personality traits conversation processing is NOT configured. thus DISABLED");
+                    // TODO: add correponding template source
                 }
             }
             else {
@@ -165,6 +147,7 @@ namespace ChatBot
                 logger.LogWarning("Conversation processing scheduler is NOT configured. thus DISABLED");
             }
 
+            // activate processing of accumulated conversations
             builder.Services.AddHostedService<StartupProcessing>();
 
             builder.Services.AddSingleton<ITemplateSource, FileTemplateSource>(p => new FileTemplateSource(System.IO.Path.Combine("Data", "DefaultPrompts")));

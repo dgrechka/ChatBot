@@ -22,10 +22,20 @@ namespace ChatBot.LLMs
     public class CallSettings {
         public List<string> StopStrings { get; set; } = new();
         public double? Temperature { get; set; }
+        public bool? ProduceJSON { get; set; }
     }
 
-    public interface ILLM
+    public interface ITextGenerationLLM
     {
         Task<string> GenerateResponseAsync(string prompt, AccountingInfo? accountingInfo, CallSettings? callSettings, CancellationToken cancellationToken);
+
+        public TextCompletionModels Model { get; }
+
+        /// <summary>
+        /// Can be used as a part of placeholder to distinguish different prompt formats required for different models (e.g. llama3, qwen2, etc.)
+        /// </summary>
+        public string PromptFormatIdentifier { get; }
+
+        public string[] DefaultStopStrings { get; }
     }
 }

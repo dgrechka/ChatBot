@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ChatBot.LLMs.HuggingFace
 {
-    public class Llama3_8B : ILLM, IDisposable
+    public class Llama3_8B : ITextGenerationLLM, IDisposable
     {
         class HuggingFaceReply
         {
@@ -18,7 +18,13 @@ namespace ChatBot.LLMs.HuggingFace
             public string GeneratedText { get; set; }
         }
 
+        public TextCompletionModels Model => TextCompletionModels.Llama3_8B_instruct;
+
         private readonly HttpClient _httpClient;
+
+        public string PromptFormatIdentifier => "llama3";
+
+        public string[] DefaultStopStrings => new string[] { "<|eot_id|>" };
 
         public Llama3_8B(string huggingFaceApiKey)
         {

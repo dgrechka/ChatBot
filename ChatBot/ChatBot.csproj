@@ -22,7 +22,25 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Data\DefaultPrompts\bot-specific-prompt.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Data\DefaultPrompts\chat-capabilities.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\DefaultPrompts\conv-summary-system-prompt.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\DefaultPrompts\conv-summary-user-prompt.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\DefaultPrompts\qwen2-user-profile-updater.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\DefaultPrompts\qwen2-conversation-summary.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\DefaultPrompts\qwen2-chat-turn-root.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Data\DefaultPrompts\llama3-chat-turn-root.md">
@@ -34,10 +52,16 @@
     <None Update="Data\DefaultPrompts\llama3-conversation-summary.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Data\DefaultPrompts\system-prompt.md">
+    <None Update="Data\DefaultPrompts\chat-turn-system-prompt.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Data\DefaultPrompts\unknown-user-prompt.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\DefaultPrompts\user-profile-updater-system-prompt.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Data\DefaultPrompts\user-profile-updater-user-prompt.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

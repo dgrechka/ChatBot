@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace ChatBot
@@ -12,7 +13,13 @@ namespace ChatBot
     {
         public TelegramBotSettings? TelegramBot { get; set; }
 
-        public LLMConfig? LLM { get; set; }
+        public ModelsConfig? Models { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <remarks>Polymorphic deserialization does not work, this specifying exact type for now.</remarks>
+        public Dictionary<string, DeepInfraModelProviderConfig>? ModelProviders { get; set; }
 
         public PersistenceConfig? Persistence { get; set; }
 
@@ -21,6 +28,17 @@ namespace ChatBot
         public bool? UseMessageTimestamps { get; set; }
 
         public ConversationProcessingSettings? ConversationProcessing { get; set; }
+    }
+
+    [JsonPolymorphic(TypeDiscriminatorPropertyName ="Type")]
+    [JsonDerivedType(typeof(DeepInfraModelProviderConfig), "DeepInfra")]
+    public class ModelProviderConfig {
+        public string Type { get; set; }
+    }
+
+    public class DeepInfraModelProviderConfig : ModelProviderConfig
+    {
+        public string ApiKey { get; set; }
     }
 
     public class PromptsSettings
@@ -33,9 +51,29 @@ namespace ChatBot
         public PostgresConfig? Postgres { get; set; }
     }
 
-    public class LLMConfig { 
-        public HuggingFaceLLMConfig? HuggingFace { get; set; }
-        public DeepInfraLLMConfig? DeepInfra { get; set; }
+    public class ModelsConfig
+    { 
+        public TextCompletionLLMConfig? ChatTurn { get; set; }
+        public TextCompletionLLMConfig? ConvSummary { get; set; }
+        public TextCompletionLLMConfig? UserProfileUpdater { get; set; }
+    }
+
+    public abstract class LLMConfig<ModelEnum>
+    {
+        public ModelEnum Model { get; set; }
+        public string Provider { get; set; }
+    }
+
+    public enum TextCompletionModels
+    {
+        Llama3_8B_instruct,
+        Llama3_70B_instruct,
+        Qwen2_72B_instruct,
+    }
+
+    public class TextCompletionLLMConfig: LLMConfig<TextCompletionModels>
+    {
+        public int? MaxTokensToGenerate { get; set; }
     }
 
     public class HuggingFaceLLMConfig

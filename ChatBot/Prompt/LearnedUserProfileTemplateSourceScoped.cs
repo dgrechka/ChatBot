@@ -55,6 +55,8 @@ namespace ChatBot.Prompt
 
                     return sb.ToString();
                 }
+
+                return string.Empty;
             }
             throw new ArgumentException($"Key {key} not found in learned user profile template source");
         }

@@ -89,6 +89,8 @@ namespace ChatBot.Prompt
                         {
                             zeroDependenciesKeys.Add(key);
                         }
+
+                        break;
                     }
                 }
             }
