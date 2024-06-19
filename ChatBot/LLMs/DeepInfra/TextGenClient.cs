@@ -112,35 +112,7 @@ namespace ChatBot.LLMs.DeepInfra
             public string GeneratedText { get; set; }
         }
 
-        public enum StatusEnum { Unknown, Queued, Running, Succeeded, Failed }
-
-        public class InferenceStatus
-        {
-            [JsonIgnore]
-            public StatusEnum Status { get; set; } = StatusEnum.Unknown;
-
-            [JsonPropertyName("status")]
-            public string StatusString
-            {
-                get => Status.ToString().ToLower();
-                set => Status = Enum.Parse<StatusEnum>(value, ignoreCase: true);
-            }
-
-            [JsonPropertyName("runtime_ms")]
-            public int RuntimeMs { get; set; }
-
-            [JsonPropertyName("cost")]
-            public decimal Cost { get; set; }
-
-            [JsonPropertyName("tokens_input")]
-            public int TokensInput { get; set; }
-
-            [JsonPropertyName("tokens_generated")]
-            public int TokensGenerated { get; set; }
-
-        }
-
-        public async Task<string> GenerateResponseAsync(string prompt, AccountingInfo? accountingInfo, CallSettings? callSettings, CancellationToken cancellationToken)
+        public async Task<string> GenerateResponseAsync(string prompt, AccountingInfo? accountingInfo, LLMCallSettings? callSettings, CancellationToken cancellationToken)
         {
             var request = new InferenceRequest
             {
@@ -163,7 +135,7 @@ namespace ChatBot.LLMs.DeepInfra
                 request.Temperature = callSettings.Temperature;
             }
 
-            var response = await GenerateResponseAsync(request, cancellationToken);
+            var response = await CallLLM(request, cancellationToken);
             _logger?.LogInformation($"InputTokens: {response.Status.TokensInput}; OutputTokens: {response.Status.TokensGenerated}; Cost: {response.Status.Cost}; RuntimeMs: {response.Status.RuntimeMs}");
 
             _billingLogger?.LogLLMCost(accountingInfo, "DeepInfra", _settings.ModelName, response.Status.TokensInput, response.Status.TokensGenerated, response.Status.Cost, "USD", cancellationToken);

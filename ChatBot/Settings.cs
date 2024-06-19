@@ -30,7 +30,7 @@ namespace ChatBot
         public ConversationProcessingSettings? ConversationProcessing { get; set; }
     }
 
-    [JsonPolymorphic(TypeDiscriminatorPropertyName ="Type")]
+    [JsonPolymorphic(TypeDiscriminatorPropertyName = "Type")]
     [JsonDerivedType(typeof(DeepInfraModelProviderConfig), "DeepInfra")]
     public class ModelProviderConfig {
         public string Type { get; set; }
@@ -52,7 +52,7 @@ namespace ChatBot
     }
 
     public class ModelsConfig
-    { 
+    {
         public TextCompletionLLMConfig? ChatTurn { get; set; }
         public TextCompletionLLMConfig? ConvSummary { get; set; }
         public TextCompletionLLMConfig? UserProfileUpdater { get; set; }
@@ -69,6 +69,11 @@ namespace ChatBot
         Llama3_8B_instruct,
         Llama3_70B_instruct,
         Qwen2_72B_instruct,
+    }
+
+    public enum TextEmbeddingModels
+    {
+        BGE_M3
     }
 
     public class TextCompletionLLMConfig: LLMConfig<TextCompletionModels>

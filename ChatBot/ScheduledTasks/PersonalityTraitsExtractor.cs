@@ -86,7 +86,7 @@ namespace ChatBot.ScheduledTasks
                 
                 var _llm = _llmFactory.CreateLLM(TextGenerationLLMRole.UserProfileUpdater);
 
-                var callSettings = new CallSettings()
+                var callSettings = new LLMCallSettings()
                 {
                     StopStrings = [.._llm.DefaultStopStrings, "\n```"],
                     ProduceJSON = true

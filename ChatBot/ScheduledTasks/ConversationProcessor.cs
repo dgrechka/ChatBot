@@ -12,12 +12,23 @@ using System.Threading.Tasks;
 namespace ChatBot.ScheduledTasks
 {
     public class Summary {
+        public string RecordId { get; set; }
         public DateTime Time { get; set; }
         public string Content { get; set; }
+        public Chat Chat { get; set; }
     }
 
     public interface ISummaryStorage {
         Task<Summary?> GetLatestSummary(Chat chat, string summaryId, CancellationToken cancellationToken);
+
+        Task<Summary?> GetSummaryByRecordId(string recordId, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Retruns a recordIds which appeared after the given summaryRecordId
+        /// </summary>
+        /// <param name="summaryRecordId">null means return all of the summaries</param>
+        /// <returns></returns>
+        IAsyncEnumerable<string> GetSummaryIdsSince(string summaryId, string? summaryRecordId, CancellationToken cancellationToken);
 
         IAsyncEnumerable<Chat> GetChatsWithSummaries(string summaryId, CancellationToken cancellationToken);
 

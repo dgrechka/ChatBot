@@ -34,7 +34,7 @@ namespace ChatBot.LLMs.DeepInfra
             };
         }
 
-        public async Task<Response> GenerateResponseAsync(Request request, CancellationToken cancellationToken)
+        public async Task<Response> CallLLM(Request request, CancellationToken cancellationToken)
         {
             // do a POST request with request as the input
             JsonContent content = JsonContent.Create(request);

@@ -15,6 +15,7 @@ namespace ChatBot.ScheduledTasks
     {
         private readonly IPromptCompiler _promptCompiler;
         private readonly ITextGenerationLLMFactory _llmFactory;
+        private readonly ISummaryProcessor? _summaryProcessor;
 
         public GeneralSummaryExtractorScoped(
             ILogger<ConversationProcessorScoped> logger,
@@ -23,11 +24,13 @@ namespace ChatBot.ScheduledTasks
             IPromptCompiler promptCompiler,
             UserMessageContext context,
             ITextGenerationLLMFactory llmFactory,
+            ISummaryProcessor? summaryProcessor,
             ConversationProcessingSettings settings)
             : base(logger, summaryStorage, chatHistoryReader, settings, context, "Summary")
         {
             _promptCompiler = promptCompiler;
             _llmFactory = llmFactory;
+            _summaryProcessor = summaryProcessor;
         }
 
         protected override async Task ProcessCore(IEnumerable<Message> conversation, CancellationToken cancellationToken)
@@ -49,7 +52,7 @@ namespace ChatBot.ScheduledTasks
             var prompt = await _promptCompiler.CompilePrompt($"{_llm.PromptFormatIdentifier}-conversation-summary", runtimeTemplates,  cancellationToken);
             
             var accountingInfo = new AccountingInfo(_context.Chat, "ConversationSummary");
-            var callSettings = new CallSettings()
+            var callSettings = new LLMCallSettings()
             {
                 StopStrings = [.._llm.DefaultStopStrings, "\n```" ],
                 ProduceJSON = true,
@@ -66,6 +69,15 @@ namespace ChatBot.ScheduledTasks
             _logger?.LogDebug(wholeSummary);
             // save summary to storage
             await _summaryStorage.SaveSummary(_context.Chat, _summaryId, lastMessageTime.Value, wholeSummary, cancellationToken);
+
+            if(_summaryProcessor != null)
+            {
+                await _summaryProcessor.NotifyNewSummaryPersisted(_summaryId);
+            }
         }
+    }
+
+    public interface ISummaryProcessor {
+        Task NotifyNewSummaryPersisted(string summaryId);
     }
 }

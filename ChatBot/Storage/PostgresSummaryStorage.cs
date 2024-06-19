@@ -26,6 +26,7 @@ namespace ChatBot.Storage
             using var command = connection.CreateCommand();
             command.CommandText = @"
                             CREATE TABLE IF NOT EXISTS Summaries (
+                                Id bigserial NOT NULL PRIMARY KEY,
                                 ChatId TEXT NOT NULL,
                                 SummaryId TEXT NOT NULL,
                                 Timestamp TIMESTAMPTZ NOT NULL,

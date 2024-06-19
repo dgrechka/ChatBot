@@ -19,7 +19,7 @@ namespace ChatBot.LLMs
         }
     }
 
-    public class CallSettings {
+    public class LLMCallSettings {
         public List<string> StopStrings { get; set; } = new();
         public double? Temperature { get; set; }
         public bool? ProduceJSON { get; set; }
@@ -27,7 +27,7 @@ namespace ChatBot.LLMs
 
     public interface ITextGenerationLLM
     {
-        Task<string> GenerateResponseAsync(string prompt, AccountingInfo? accountingInfo, CallSettings? callSettings, CancellationToken cancellationToken);
+        Task<string> GenerateResponseAsync(string prompt, AccountingInfo? accountingInfo, LLMCallSettings? callSettings, CancellationToken cancellationToken);
 
         public TextCompletionModels Model { get; }
 
