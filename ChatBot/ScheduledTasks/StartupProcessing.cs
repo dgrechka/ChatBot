@@ -33,9 +33,9 @@ namespace ChatBot.ScheduledTasks
                 _logger.LogInformation("Scheduling startup processing of all chats");
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 int counter = 0;
-                await foreach (var chat in _chatHistoryReader.GetChats(cancellationToken))
+                await foreach (var (chat,lastMessageTime) in _chatHistoryReader.GetChatsLastMessageTime(cancellationToken))
                 {
-                    await _conversationProcessor.NotifyLatestMessageTime(chat, DateTime.MinValue);
+                    await _conversationProcessor.NotifyLatestMessageTime(chat, lastMessageTime);
                     counter++;
                 }
                 sw.Stop();

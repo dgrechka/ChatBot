@@ -42,6 +42,12 @@ namespace ChatBot.ScheduledTasks
                 out DateTime? lastMessageTime,
                 out int counter);
 
+            if(firstMessageTime == null || lastMessageTime == null)
+            {
+                _logger?.LogWarning("No messages in conversation to process");
+                return;
+            }
+
             var runtimeTemplates = new Dictionary<string, string>
             {
                 { "conversation-to-process", formattedConversation.ToString() }
@@ -51,6 +57,12 @@ namespace ChatBot.ScheduledTasks
 
             var prompt = await _promptCompiler.CompilePrompt($"{_llm.PromptFormatIdentifier}-conversation-summary", runtimeTemplates,  cancellationToken);
             
+            if(_context.Chat == null)
+            {
+                _logger?.LogWarning("Chat is not set in the context");
+                return;
+            }
+
             var accountingInfo = new AccountingInfo(_context.Chat, "ConversationSummary");
             var callSettings = new LLMCallSettings()
             {

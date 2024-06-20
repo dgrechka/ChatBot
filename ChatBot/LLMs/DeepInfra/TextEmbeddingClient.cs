@@ -27,7 +27,7 @@ namespace ChatBot.LLMs.DeepInfra
             var response = await this.CallLLM(new InferenceRequest { Texts = [text], Normalize=true }, cancellationToken);
             if(response?.Status?.Status != StatusEnum.Succeeded)
             {
-                throw new Exception($"Failed to generate embedding: {response.Status}");
+                throw new Exception($"Failed to generate embedding: {response?.Status}");
             }
             if (accountingInfo != null && _billingLogger != null)
             {
@@ -42,9 +42,14 @@ namespace ChatBot.LLMs.DeepInfra
                     cancellationToken);
             }
 
-            _logger?.LogInformation($"DeepInfraInferenceClient[{_settings.ModelName}]: Generated embedding for text length {text.Length}, resulting embeding dimensions: {response?.Embeddings[0]?.Length ?? 0}");
+            if (response?.Embeddings?.Length != 1)
+            {
+                throw new Exception($"Unexpected number of embeddings: {response?.Embeddings?.Length ?? 0}");
+            }
 
-            return response.Embeddings[0];
+            _logger?.LogInformation($"DeepInfraInferenceClient[{_settings.ModelName}]: Generated embedding for text length {text.Length}, resulting embedding dimensions: {response?.Embeddings[0]?.Length ?? 0}");
+            
+            return response!.Embeddings[0];
         }
 
         public TextEmbeddingModels Model => _settings.ModelName switch
@@ -56,7 +61,7 @@ namespace ChatBot.LLMs.DeepInfra
         public class InferenceRequest
         {
             [JsonPropertyName("inputs")]
-            public string[] Texts { get; set; }
+            public string[] Texts { get; set; } = Array.Empty<string>();
 
             [JsonPropertyName("normalize")]
             public bool Normalize { get; set; }
@@ -65,10 +70,10 @@ namespace ChatBot.LLMs.DeepInfra
         public class InferenceResponse
         {
             [JsonPropertyName("embeddings")]
-            public double[][] Embeddings { get; set; }
+            public double[][]? Embeddings { get; set; }
 
             [JsonPropertyName("inference_status")]
-            public InferenceStatus Status { get; set; }
+            public InferenceStatus? Status { get; set; }
         }
     }
 }

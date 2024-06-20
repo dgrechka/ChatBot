@@ -41,6 +41,12 @@ namespace ChatBot.Prompt
                 throw new ArgumentException($"Key {key} is not supported by this source");
             }
 
+            if (_userMessageContext.Chat == null)
+            {
+                _logger?.LogWarning("Chat is not set in the context");
+                return string.Empty;
+            }
+
             List<Message> prevMessages = new();
 
             await foreach (var prevMessage in _chatHistory.GetMessagesSince(_userMessageContext.Chat, DateTime.UtcNow - TimeSpan.FromHours(1), cancellationToken))
@@ -52,7 +58,7 @@ namespace ChatBot.Prompt
 
             var formatter = _conversationFormatterFactory.GetFormatter();
 
-            return formatter.FormatConversation(prevMessagesWithCurrentMessage, addResponsePrimer: true);
+            return formatter.FormatConversation(prevMessagesWithCurrentMessage!, addResponsePrimer: true);
 
         }
 

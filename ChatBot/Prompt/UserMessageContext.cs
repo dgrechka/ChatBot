@@ -9,8 +9,8 @@ namespace ChatBot.Prompt
 {
     public class UserMessageContext
     {
-        public Message Message { get; set; }
-        public Chat Chat { get; set; }
+        public Message? Message { get; set; }
+        public Chat? Chat { get; set; }
         public TextCompletionModels? ActiveModel { get; set; }
     }
 }

@@ -43,6 +43,11 @@ namespace ChatBot.ScheduledTasks
 
         public async Task Process(CancellationToken cancellationToken)
         {
+            if (_context.Chat == null) {
+                _logger?.LogWarning("Chat is not set in the context");
+                return;
+            }
+
             var latestSummary = await _summaryStorage.GetLatestSummary(_context.Chat, "UserProfileUpdate", cancellationToken);
 
             var propertyKeys = new List<string>(_settings.UserProfileProperties?.Keys ?? Enumerable.Empty<string>());
@@ -50,7 +55,7 @@ namespace ChatBot.ScheduledTasks
             var propertyDescriptions = new StringBuilder();
             foreach (var propKey in propertyKeys)
             {
-                propertyDescriptions.AppendLine($"- {propKey}: {_settings.UserProfileProperties[propKey]}");
+                propertyDescriptions.AppendLine($"- {propKey}: {_settings.UserProfileProperties![propKey]}");
             }
 
             var propertyValues = await Task.WhenAll(propertyKeys.Select(key => _summaryStorage.GetLatestSummary(_context.Chat, "UserProfile" + key, cancellationToken)));
@@ -77,6 +82,13 @@ namespace ChatBot.ScheduledTasks
                     out DateTime? firstMessageTime,
                     out DateTime? lastMessageTime,
                     out int counter);
+
+                if (firstMessageTime == null || lastMessageTime == null)
+                {
+                    _logger?.LogWarning("No messages in conversation to process");
+                    return;
+                }
+
                 runtimeTemplates["conversation-to-process"] = formattedConversation;
 
                 var userProfileJson = JsonSerializer.Serialize(userProfile, options: new JsonSerializerOptions() { WriteIndented = true });
@@ -100,7 +112,8 @@ namespace ChatBot.ScheduledTasks
                 try
                 {
                     // decoding the JSON summary
-                    var summaryJson = JsonSerializer.Deserialize<Dictionary<string, string>>(summary);
+                    var summaryJson = JsonSerializer.Deserialize<Dictionary<string, string>>(summary)!;
+                    var updatedKeys = new List<string>();
                     foreach (var (key, value) in summaryJson)
                     {
                         if (!propertyKeys.Contains(key))
@@ -119,9 +132,10 @@ namespace ChatBot.ScheduledTasks
                         await _summaryStorage.SaveSummary(_context.Chat, "UserProfile" + key, lastMessageTime.Value, value, cancellationToken);
 
                         userProfile[key] = value;
+                        updatedKeys.Add(key);
                     }
 
-                    await _summaryStorage.SaveSummary(_context.Chat, "UserProfileUpdate", lastMessageTime.Value, $"Updated {summaryJson.Count} fields: {string.Join(", ", summaryJson.Keys)}", cancellationToken);
+                    await _summaryStorage.SaveSummary(_context.Chat, "UserProfileUpdate", lastMessageTime.Value, $"Updated {updatedKeys.Count} fields: {string.Join(", ", updatedKeys)}", cancellationToken);
 
                     _logger?.LogInformation($"Updated user profile ({summaryJson.Count} fields) for chat {_context.Chat}");
                     break;
@@ -129,7 +143,7 @@ namespace ChatBot.ScheduledTasks
                 }
                 catch (JsonException e)
                 {
-                    _logger?.LogError($"Error parsing JSON summary: {e.Message}");
+                    _logger?.LogWarning($"Error parsing JSON summary: {e.Message}");
                 }
             }
         }

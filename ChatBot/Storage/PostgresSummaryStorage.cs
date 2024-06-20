@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -26,7 +27,7 @@ namespace ChatBot.Storage
             using var command = connection.CreateCommand();
             command.CommandText = @"
                             CREATE TABLE IF NOT EXISTS Summaries (
-                                Id bigserial NOT NULL PRIMARY KEY,
+                                RecordId bigserial NOT NULL PRIMARY KEY,
                                 ChatId TEXT NOT NULL,
                                 SummaryId TEXT NOT NULL,
                                 Timestamp TIMESTAMPTZ NOT NULL,
@@ -54,7 +55,7 @@ namespace ChatBot.Storage
                 using var command = connection.CreateCommand();
 
                 command.CommandText = @"
-                    SELECT Timestamp, Summary
+                    SELECT RecordId, Timestamp, Summary
                     FROM Summaries
                     WHERE ChatId = @ChatId AND SummaryId = @SummaryId
                     ORDER BY Timestamp DESC
@@ -64,11 +65,9 @@ namespace ChatBot.Storage
 
                 using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-                return await reader.ReadAsync(cancellationToken) ? new Summary
-                {
-                    Time = reader.GetDateTime(0),
-                    Content = reader.GetString(1)
-                } : null;
+                return await reader.ReadAsync(cancellationToken) ?
+                    new Summary(reader.GetInt32(0).ToString(), reader.GetDateTime(1), reader.GetString(2), chat)
+                    : null;
             }
             finally
             {
@@ -76,7 +75,74 @@ namespace ChatBot.Storage
             }
         }
 
-        public async IAsyncEnumerable<Chat> GetChatsWithSummaries(string summaryId, CancellationToken cancellationToken)
+        public async Task<Summary?> GetSummaryByRecordId(string recordId, CancellationToken cancellationToken) {
+            await EnsureInitialized(cancellationToken);
+
+            using var connection = _postgres.DataSource.CreateConnection();
+            await connection.OpenAsync(cancellationToken);
+            try
+            {
+                using var command = connection.CreateCommand();
+
+                command.CommandText = @"
+                    SELECT ChatId, Timestamp, Summary
+                    FROM Summaries
+                    WHERE RecordId = @RecordId
+                ";
+                command.Parameters.Add(new Npgsql.NpgsqlParameter("@RecordId", int.Parse(recordId)));
+
+                using var reader = await command.ExecuteReaderAsync(cancellationToken);
+                return await reader.ReadAsync(cancellationToken) ?
+                    new Summary(recordId, reader.GetDateTime(1), reader.GetString(2), new Chat(reader.GetString(0)))
+                    : null;
+            }
+            finally
+            {
+                await connection.CloseAsync();
+            }
+        }
+
+        public async IAsyncEnumerable<string> GetSummaryIdsSince(
+            string summaryId,
+            string? summaryRecordId,
+            [EnumeratorCancellation] CancellationToken cancellationToken) {
+            await EnsureInitialized(cancellationToken);
+using var connection = _postgres.DataSource.CreateConnection();
+            await connection.OpenAsync(cancellationToken);
+            try
+            {
+                using var command = connection.CreateCommand();
+
+                string recordIdFiltering = string.Empty;
+                if (summaryRecordId != null)
+                {
+                    int recordIdSince = int.Parse(summaryRecordId);
+                    recordIdFiltering = " AND Id > @SummaryRecordId";
+                    command.Parameters.Add(new Npgsql.NpgsqlParameter("@SummaryRecordId", recordIdSince));
+                }
+
+
+                command.CommandText = $@"
+                    SELECT Id
+                    FROM Summaries
+                    WHERE SummaryId = @SummaryId {recordIdFiltering}
+                ";
+                command.Parameters.Add(new Npgsql.NpgsqlParameter("@SummaryId", summaryId));
+                
+
+                using var reader = await command.ExecuteReaderAsync(cancellationToken);
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    yield return reader.GetString(0);
+                }
+            }
+            finally
+            {
+                await connection.CloseAsync();
+            }
+        }
+
+        public async IAsyncEnumerable<Chat> GetChatsWithSummaries(string summaryId, [EnumeratorCancellation]CancellationToken cancellationToken)
         {
             await EnsureInitialized(cancellationToken);
 

@@ -48,7 +48,7 @@ namespace ChatBot.LLMs.DeepInfra
                 throw new Exception($"Failed to generate response: {response.ReasonPhrase}");
             }
             string responseContent = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<Response>(responseContent);
+            return JsonSerializer.Deserialize<Response>(responseContent)!;
         }
 
         protected virtual void Dispose(bool disposing)
@@ -74,9 +74,9 @@ namespace ChatBot.LLMs.DeepInfra
 
     public class DeepInfraInferenceClientSettings
     {
-        public string ModelName { get; set; }
-        public string ApiKey { get; set; }
+        public string ModelName { get; set; } = string.Empty;
+        public string ApiKey { get; set; } = string.Empty;
 
-        public int MaxTokensToGenerate { get; set; } = 512;
+        public int MaxTokensToGenerate { get; set; } = 0;
     }
 }

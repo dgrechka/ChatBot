@@ -69,13 +69,13 @@ namespace ChatBot.LLMs.DeepInfra
 
         public class ResponseFormat {
             [JsonPropertyName("type")]
-            public string Type { get; set; }
+            public string Type { get; set; } = "json_object";
         }
 
         public class InferenceRequest
         {
             [JsonPropertyName("input")]
-            public string Input { get; set; }
+            public string Input { get; set; } = string.Empty;
 
             [JsonPropertyName("max_new_tokens")]
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -97,19 +97,19 @@ namespace ChatBot.LLMs.DeepInfra
         public class InferenceResponse
         {
             [JsonPropertyName("request_id")]
-            public string RequestId { get; set; }
+            public string? RequestId { get; set; }
 
             [JsonPropertyName("inference_status")]
-            public InferenceStatus Status { get; set; }
+            public InferenceStatus? Status { get; set; }
 
             [JsonPropertyName("results")]
-            public Results[] Results { get; set; }
+            public Results[]? Results { get; set; }
         }
 
         public class Results
         {
             [JsonPropertyName("generated_text")]
-            public string GeneratedText { get; set; }
+            public string? GeneratedText { get; set; }
         }
 
         public async Task<string> GenerateResponseAsync(string prompt, AccountingInfo? accountingInfo, LLMCallSettings? callSettings, CancellationToken cancellationToken)
@@ -136,11 +136,14 @@ namespace ChatBot.LLMs.DeepInfra
             }
 
             var response = await CallLLM(request, cancellationToken);
-            _logger?.LogInformation($"InputTokens: {response.Status.TokensInput}; OutputTokens: {response.Status.TokensGenerated}; Cost: {response.Status.Cost}; RuntimeMs: {response.Status.RuntimeMs}");
+            _logger?.LogInformation($"InputTokens: {response?.Status?.TokensInput}; OutputTokens: {response?.Status?.TokensGenerated}; Cost: {response?.Status?.Cost}; RuntimeMs: {response?.Status?.RuntimeMs}");
 
-            _billingLogger?.LogLLMCost(accountingInfo, "DeepInfra", _settings.ModelName, response.Status.TokensInput, response.Status.TokensGenerated, response.Status.Cost, "USD", cancellationToken);
+            if (accountingInfo != null && _billingLogger != null)
+            {
+                _billingLogger?.LogLLMCost(accountingInfo, "DeepInfra", _settings.ModelName, response?.Status?.TokensInput ?? 0, response?.Status?.TokensGenerated ?? 0, response?.Status?.Cost ?? 0, "USD", cancellationToken);
+            }
 
-            return response.Results[0].GeneratedText;
+            return response?.Results?[0]?.GeneratedText ?? string.Empty;
         }
     }
 
