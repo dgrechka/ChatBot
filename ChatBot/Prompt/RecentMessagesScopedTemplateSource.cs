@@ -18,18 +18,18 @@ namespace ChatBot.Prompt
         public static string TemplateKey => "llm-formatted-recent-messages-with-reply-primer";
 
         private readonly ILogger<RecentMessagesScopedTemplateSource>? _logger;
-        private readonly IChatHistoryReader _chatHistory;
+        private readonly ICurrentConversation _conversation;
         private readonly IConversationFormatterFactory _conversationFormatterFactory;
         private readonly UserMessageContext _userMessageContext;
 
         public RecentMessagesScopedTemplateSource(
             ILogger<RecentMessagesScopedTemplateSource>? logger,
-            IChatHistoryReader chatHistory,
+            ICurrentConversation conversation,
             IConversationFormatterFactory conversationFormatterFactory,
             UserMessageContext userMessageContext)
         {
             _logger = logger;
-            _chatHistory = chatHistory;
+            _conversation = conversation;
             _userMessageContext = userMessageContext;
             _conversationFormatterFactory = conversationFormatterFactory;
         }
@@ -41,18 +41,19 @@ namespace ChatBot.Prompt
                 throw new ArgumentException($"Key {key} is not supported by this source");
             }
 
-            List<Message> prevMessages = new();
-
-            await foreach (var prevMessage in _chatHistory.GetMessagesSince(_userMessageContext.Chat, DateTime.UtcNow - TimeSpan.FromHours(1), cancellationToken))
+            if (_userMessageContext.Chat == null)
             {
-                prevMessages.Add(prevMessage);
+                _logger?.LogWarning("Chat is not set in the context");
+                return string.Empty;
             }
+
+            var prevMessages = await _conversation.GetMessages(cancellationToken);
 
             var prevMessagesWithCurrentMessage = prevMessages.Append(_userMessageContext.Message);
 
             var formatter = _conversationFormatterFactory.GetFormatter();
 
-            return formatter.FormatConversation(prevMessagesWithCurrentMessage, addResponsePrimer: true);
+            return formatter.FormatConversation(prevMessagesWithCurrentMessage!, addResponsePrimer: true);
 
         }
 

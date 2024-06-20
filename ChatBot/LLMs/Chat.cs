@@ -25,7 +25,16 @@ namespace ChatBot.LLMs
             ID = id;
         }
 
-        public override bool Equals(object obj)
+        public Chat(string str) {
+            var parts = str.Split('|');
+            if (parts.Length != 2) {
+                throw new ArgumentException("Invalid chat string");
+            }
+            Namespace = parts[0];
+            ID = parts[1];
+        }
+
+        public override bool Equals(object? obj)
         {
             if (obj is Chat chat)
             {

@@ -2,6 +2,7 @@
 using ChatBot.Chats;
 using ChatBot.Interfaces;
 using ChatBot.LLMs;
+using ChatBot.LLMs.DeepInfra;
 using ChatBot.Prompt;
 using ChatBot.ScheduledTasks;
 using ChatBot.Storage;
@@ -72,6 +73,11 @@ namespace ChatBot
                 logger.LogInformation($"{settings.Prompts?.Inline.Count} prompt templates loaded from .NET configuration");
             }
 
+            if (settings.Prompts?.EnableConvSummaryRAG ?? false) {
+                builder.Services.AddScoped<ITemplateSource, PriorConversationSummariesRAGTemplateSourceScoped>();
+                logger.LogInformation("Prior conversation summaries RAG template source is enabled");
+            }
+
             if(settings.Models == null)
             {
                 logger.LogCritical("Models are not configured");
@@ -80,7 +86,7 @@ namespace ChatBot
 
             builder.Services.AddSingleton(settings.Models);
 
-            if(settings.ModelProviders == null)
+            if (settings.ModelProviders == null)
             {
                 logger.LogCritical("Model providers are not configured");
                 Environment.Exit(1);
@@ -88,6 +94,7 @@ namespace ChatBot
 
             builder.Services.AddSingleton(settings.ModelProviders);
             builder.Services.AddSingleton<ITextGenerationLLMFactory, TextGenerationLLMFactory>();
+            builder.Services.AddSingleton<ITextEmbeddingLLMFactory, TextEmbeddingLLMFactory>();
             builder.Services.AddTransient<IConversationFormatterFactory, ConversationFormatterFactoryTransient>(
                 p => new ConversationFormatterFactoryTransient(p.GetRequiredService<UserMessageContext>(), DateTime.UtcNow));
 
@@ -112,6 +119,12 @@ namespace ChatBot
                 logger.LogInformation("Postgres billing logging enabled");
                 logger.LogInformation("Postgres chat history is enabled");
                 logger.LogInformation("Postgres summary storage enabled");
+
+                if (settings.ConversationProcessing?.EnableConvSummaryEmbeddingsGeneration ?? false) {
+                    builder.Services.AddSingleton<IEmbeddingStorageWriter, PostgresSummaryEmbeddings>();
+                    builder.Services.AddSingleton<IEmbeddingStorageLookup>(s => (IEmbeddingStorageLookup)s.GetRequiredService<IEmbeddingStorageWriter>());
+                    logger.LogInformation("Postgres embeddings storage enabled");
+                }
             } else
             {
                 builder.Services.AddSingleton<IChatHistoryReader, MemoryChatHistory>();
@@ -125,10 +138,19 @@ namespace ChatBot
                 builder.Services.AddSingleton(settings.ConversationProcessing);
                 logger.LogInformation($"Conversation processing scheduler is enabled. Considering conversation as complete if no messages in {settings.ConversationProcessing.IdleConversationInterval}");
 
-                if(settings.ConversationProcessing.EnableConvSummaryForRAGGeneration)
+                if(settings.ConversationProcessing.EnableConvSummaryGeneration)
                 {
                     builder.Services.AddScoped<IConversationProcessor, GeneralSummaryExtractorScoped>();
                     logger.LogInformation("General summary conversation processing is enabled");
+                }
+
+                if (
+                    settings.ConversationProcessing.EnableConvSummaryGeneration &&
+                    settings.ConversationProcessing.EnableConvSummaryEmbeddingsGeneration
+                    )
+                {
+                    builder.Services.AddSingleton<ISummaryProcessor, EmbeddingSummaryProcessor>();
+                    logger.LogInformation("Embedding summary processor is enabled");
                 }
 
                 if (settings.ConversationProcessing.UserProfileProperties != null)
@@ -151,7 +173,8 @@ namespace ChatBot
             builder.Services.AddHostedService<StartupProcessing>();
 
             builder.Services.AddSingleton<ITemplateSource, FileTemplateSource>(p => new FileTemplateSource(System.IO.Path.Combine("Data", "DefaultPrompts")));
-            builder.Services.AddScoped<Prompt.UserMessageContext>();
+            builder.Services.AddScoped<UserMessageContext>();
+            builder.Services.AddScoped<ICurrentConversation, CurrentConversationScoped>();
             builder.Services.AddTransient<IPromptCompiler, Prompt.Compiler>();
 
             using IHost host = builder.Build();

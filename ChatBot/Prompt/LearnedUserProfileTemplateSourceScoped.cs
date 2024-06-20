@@ -33,18 +33,23 @@ namespace ChatBot.Prompt
         {
             if (key == TemplateKey)
             {
-                if(_conversationProcessingSettings.UserProfileProperties == null)
+                if((_conversationProcessingSettings.UserProfileProperties?.Count ?? 0) == 0)
                 {
                     return string.Empty;
                 }
 
-                var enabledPropertyKeys = new List<string>(_conversationProcessingSettings.UserProfileProperties.Keys);
+                if (_userMessageContext.Chat == null) {
+                    _logger?.LogWarning("Chat is not set");
+                    return string.Empty;
+                }
+
+                var enabledPropertyKeys = new List<string>(_conversationProcessingSettings.UserProfileProperties!.Keys);
                 var recentPropertyValues = await Task.WhenAll(
                     enabledPropertyKeys.Select(async propKey => await _summaryStorage.GetLatestSummary(_userMessageContext.Chat, "UserProfile" + propKey, cancellationToken)));
 
                 if(recentPropertyValues.Any(v => !string.IsNullOrWhiteSpace(v?.Content)))
                 {
-                    var sb = new StringBuilder("Based on the previous conversations you have learned the following user profile:\n\n");
+                    var sb = new StringBuilder();
                     for(int i = 0; i < enabledPropertyKeys.Count; i++)
                     {
                         if (string.IsNullOrWhiteSpace(recentPropertyValues[i]?.Content))

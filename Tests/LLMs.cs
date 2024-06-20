@@ -34,9 +34,9 @@ namespace LLMs
         {
             var messages = new List<Message>
             {
-                new Message { Author = Author.User, Content = "How are you?", Timestamp = new DateTime(2024,06,05, 14,04,04) },
-                new Message { Author = Author.Bot, Content = "I'm fine", Timestamp = new DateTime(2024,06,05, 14,04,05) },
-                new Message { Author = Author.User, Content = "See you", Timestamp = new DateTime(2024,06,05, 14,05,04)}
+                new Message(new DateTime(2024,06,05, 14,04,04),Author.User,"How are you?"),
+                new Message(new DateTime(2024,06,05, 14,04,05),Author.Bot,"I'm fine"),
+                new Message(new DateTime(2024,06,05, 14,05,04),Author.User,"See you")
             };
 
             var formatter = new ChatBot.Prompt.ConvFormatterLlama3(new DateTime(2024, 06, 05, 14, 05, 05, DateTimeKind.Utc));

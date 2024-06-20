@@ -17,7 +17,13 @@ namespace ChatBot.Storage
         public PostgresConnection(PostgresConfig config)
         {
             var connectionString = $"Host={config.Host};Port={config.Port};Username={config.Username};Password={config.Password};Database={config.Database}";
-            _dataSource = NpgsqlDataSource.Create(connectionString);
+            var builder = new NpgsqlDataSourceBuilder(connectionString);
+
+            if (config.UseVectorExtension) {
+                builder.UseVector();
+            }
+
+            _dataSource = builder.Build();
         }
 
         public void Dispose()

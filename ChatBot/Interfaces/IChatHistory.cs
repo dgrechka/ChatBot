@@ -11,7 +11,7 @@ namespace ChatBot.Interfaces
     {
         IAsyncEnumerable<Message> GetMessagesSince(Chat chat, DateTime time, CancellationToken cancellationToken);
 
-        IAsyncEnumerable<Chat> GetChats(CancellationToken cancellationToken);
+        IAsyncEnumerable<(Chat,DateTime)> GetChatsLastMessageTime(CancellationToken cancellationToken);
     }
 
     public interface IChatHistoryWriter

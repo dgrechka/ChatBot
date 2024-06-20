@@ -15,6 +15,7 @@ namespace ChatBot.ScheduledTasks
     {
         private readonly IPromptCompiler _promptCompiler;
         private readonly ITextGenerationLLMFactory _llmFactory;
+        private readonly ISummaryProcessor? _summaryProcessor;
 
         public GeneralSummaryExtractorScoped(
             ILogger<ConversationProcessorScoped> logger,
@@ -23,11 +24,13 @@ namespace ChatBot.ScheduledTasks
             IPromptCompiler promptCompiler,
             UserMessageContext context,
             ITextGenerationLLMFactory llmFactory,
+            ISummaryProcessor? summaryProcessor,
             ConversationProcessingSettings settings)
             : base(logger, summaryStorage, chatHistoryReader, settings, context, "Summary")
         {
             _promptCompiler = promptCompiler;
             _llmFactory = llmFactory;
+            _summaryProcessor = summaryProcessor;
         }
 
         protected override async Task ProcessCore(IEnumerable<Message> conversation, CancellationToken cancellationToken)
@@ -39,6 +42,12 @@ namespace ChatBot.ScheduledTasks
                 out DateTime? lastMessageTime,
                 out int counter);
 
+            if(firstMessageTime == null || lastMessageTime == null)
+            {
+                _logger?.LogWarning("No messages in conversation to process");
+                return;
+            }
+
             var runtimeTemplates = new Dictionary<string, string>
             {
                 { "conversation-to-process", formattedConversation.ToString() }
@@ -48,8 +57,14 @@ namespace ChatBot.ScheduledTasks
 
             var prompt = await _promptCompiler.CompilePrompt($"{_llm.PromptFormatIdentifier}-conversation-summary", runtimeTemplates,  cancellationToken);
             
+            if(_context.Chat == null)
+            {
+                _logger?.LogWarning("Chat is not set in the context");
+                return;
+            }
+
             var accountingInfo = new AccountingInfo(_context.Chat, "ConversationSummary");
-            var callSettings = new CallSettings()
+            var callSettings = new LLMCallSettings()
             {
                 StopStrings = [.._llm.DefaultStopStrings, "\n```" ],
                 ProduceJSON = true,
@@ -66,6 +81,15 @@ namespace ChatBot.ScheduledTasks
             _logger?.LogDebug(wholeSummary);
             // save summary to storage
             await _summaryStorage.SaveSummary(_context.Chat, _summaryId, lastMessageTime.Value, wholeSummary, cancellationToken);
+
+            if(_summaryProcessor != null)
+            {
+                await _summaryProcessor.NotifyNewSummaryPersisted(_summaryId);
+            }
         }
+    }
+
+    public interface ISummaryProcessor {
+        Task NotifyNewSummaryPersisted(string summaryId);
     }
 }

@@ -11,7 +11,7 @@ namespace ChatBot.Billing
 {
     public class PostgresBillingLogger : PostgresBasedStorage, IBillingLogger
     {
-        private readonly ILogger<PostgresBillingLogger> _logger;
+        private readonly ILogger<PostgresBillingLogger>? _logger;
 
         public PostgresBillingLogger(ILogger<PostgresBillingLogger>? logger, PostgresConnection postgres) : base(postgres)
         {
@@ -20,7 +20,7 @@ namespace ChatBot.Billing
 
         protected override async Task InitializeCore(CancellationToken token)
         {
-            _logger.LogInformation("Initializing PostgresBillingLogger");
+            _logger?.LogInformation("Initializing PostgresBillingLogger");
             using var connection = _postgres.DataSource.CreateConnection();
             await connection.OpenAsync(token);
             using var command = connection.CreateCommand();

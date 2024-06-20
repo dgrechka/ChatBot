@@ -15,7 +15,7 @@ namespace ChatBot.LLMs.HuggingFace
         class HuggingFaceReply
         {
             [JsonPropertyName("generated_text")]
-            public string GeneratedText { get; set; }
+            public string? GeneratedText { get; set; }
         }
 
         public TextCompletionModels Model => TextCompletionModels.Llama3_8B_instruct;
@@ -39,7 +39,7 @@ namespace ChatBot.LLMs.HuggingFace
             };
         }
 
-        public async Task<string> GenerateResponseAsync(string prompt, AccountingInfo? accountingInfo, CallSettings? settings, CancellationToken cancellationToken)
+        public async Task<string> GenerateResponseAsync(string prompt, AccountingInfo? accountingInfo, LLMCallSettings? settings, CancellationToken cancellationToken)
         {
             // do a POST request with llmInput.ToString() as the input
             JsonContent content = JsonContent.Create(new { inputs = prompt });
@@ -50,7 +50,11 @@ namespace ChatBot.LLMs.HuggingFace
             }
             string responseContent = await response.Content.ReadAsStringAsync();
             var responseJson = JsonSerializer.Deserialize<HuggingFaceReply[]>(responseContent);
-            string generatedText = responseJson[0].GeneratedText;
+            string generatedText = responseJson?[0]?.GeneratedText ?? string.Empty;
+            if (!generatedText.StartsWith(prompt))
+            {
+                throw new Exception($"Unexpected response: {generatedText}");
+            }
 
             string responseText = generatedText.Substring(prompt.Length);
             return responseText;

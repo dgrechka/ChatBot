@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System.Data.Common;
 using ChatBot.Storage;
+using System.Runtime.CompilerServices;
 
 namespace ChatBot.Chats
 {
@@ -48,7 +49,27 @@ namespace ChatBot.Chats
             _logger = logger;
         }
 
-        public async IAsyncEnumerable<Message> GetMessagesSince(Chat chat, DateTime time, CancellationToken cancellationToken)
+        public async IAsyncEnumerable<(Chat, DateTime)> GetChatsLastMessageTime([EnumeratorCancellation] CancellationToken cancellationToken) {
+            await EnsureInitialized(cancellationToken);
+
+            using var connection = _postgres.DataSource.CreateConnection();
+            await connection.OpenAsync(cancellationToken);
+            using var command = connection.CreateCommand();
+            command.CommandText = @"
+                    SELECT ChatId, MAX(Timestamp)
+                    FROM MessageHistory
+                    GROUP BY ChatId;
+                ";
+            using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                yield return (new Chat(reader.GetString(0)), reader.GetDateTime(1));
+            }
+            await connection.CloseAsync();
+
+        }
+
+        public async IAsyncEnumerable<Message> GetMessagesSince(Chat chat, DateTime time, [EnumeratorCancellation]CancellationToken cancellationToken)
         {
             await EnsureInitialized(cancellationToken);
 
@@ -66,15 +87,10 @@ namespace ChatBot.Chats
             using var reader = await command.ExecuteReaderAsync(cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
-                Message message = null;
+                Message? message = null;
                 try
                 {
-                    message = new Message
-                    {
-                        Timestamp = reader.GetDateTime(0),
-                        Author = Enum.Parse<Author>(reader.GetString(1)),
-                        Content = reader.GetString(2)
-                    };
+                    message = new Message(reader.GetDateTime(0), Enum.Parse<Author>(reader.GetString(1)), reader.GetString(2));
                 }
                 catch (ArgumentException e)
                 {
@@ -89,7 +105,7 @@ namespace ChatBot.Chats
             await connection.CloseAsync();
         }
 
-        public async IAsyncEnumerable<Chat> GetChats(CancellationToken cancellationToken)
+        public async IAsyncEnumerable<Chat> GetChats([EnumeratorCancellation] CancellationToken cancellationToken)
         {
             await EnsureInitialized(cancellationToken);
 
@@ -103,8 +119,7 @@ namespace ChatBot.Chats
             using var reader = await command.ExecuteReaderAsync(cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
-                var split = reader.GetString(0).Split('|');
-                yield return new Chat(split[0], split[1]);
+                yield return new Chat(reader.GetString(0));
             }
             await connection.CloseAsync();
         }

@@ -12,12 +12,30 @@ using System.Threading.Tasks;
 namespace ChatBot.ScheduledTasks
 {
     public class Summary {
+        public string RecordId { get; set; }
         public DateTime Time { get; set; }
         public string Content { get; set; }
+        public Chat Chat { get; set; }
+
+        public Summary(string recordId, DateTime time, string content, Chat chat) {
+            RecordId = recordId;
+            Time = time;
+            Content = content;
+            Chat = chat;
+        }
     }
 
     public interface ISummaryStorage {
         Task<Summary?> GetLatestSummary(Chat chat, string summaryId, CancellationToken cancellationToken);
+
+        Task<Summary?> GetSummaryByRecordId(string recordId, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Returns a recordIds which appeared after the given summaryRecordId
+        /// </summary>
+        /// <param name="summaryRecordId">null means return all of the summaries</param>
+        /// <returns></returns>
+        IAsyncEnumerable<string> GetSummaryIdsSince(string summaryId, string? summaryRecordId, CancellationToken cancellationToken);
 
         IAsyncEnumerable<Chat> GetChatsWithSummaries(string summaryId, CancellationToken cancellationToken);
 
@@ -51,6 +69,12 @@ namespace ChatBot.ScheduledTasks
 
         public async Task Process(CancellationToken cancellationToken)
         {
+            if(_context.Chat == null)
+            {
+                _logger?.LogWarning("Chat is not set in the context");
+                return;
+            }
+
             var latestSummary = await _summaryStorage.GetLatestSummary(_context.Chat, _summaryId, cancellationToken);
             // we fetch all messages that appear after the last summary
             var messages = _chatHistoryReader.GetMessagesSince(_context.Chat, latestSummary?.Time ?? DateTime.MinValue, cancellationToken);

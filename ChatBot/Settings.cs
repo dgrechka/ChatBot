@@ -30,19 +30,20 @@ namespace ChatBot
         public ConversationProcessingSettings? ConversationProcessing { get; set; }
     }
 
-    [JsonPolymorphic(TypeDiscriminatorPropertyName ="Type")]
+    [JsonPolymorphic(TypeDiscriminatorPropertyName = "Type")]
     [JsonDerivedType(typeof(DeepInfraModelProviderConfig), "DeepInfra")]
     public class ModelProviderConfig {
-        public string Type { get; set; }
+        public string Type { get; set; } = string.Empty;
     }
 
     public class DeepInfraModelProviderConfig : ModelProviderConfig
     {
-        public string ApiKey { get; set; }
+        public string ApiKey { get; set; } = string.Empty;
     }
 
     public class PromptsSettings
     {
+        public bool EnableConvSummaryRAG { get; set; } = false;
         public Dictionary<string, string>? Inline { get; set; }
     }
 
@@ -52,16 +53,17 @@ namespace ChatBot
     }
 
     public class ModelsConfig
-    { 
+    {
         public TextCompletionLLMConfig? ChatTurn { get; set; }
         public TextCompletionLLMConfig? ConvSummary { get; set; }
         public TextCompletionLLMConfig? UserProfileUpdater { get; set; }
-    }
 
+        public TextEmbeddingLLMConfig? ConvSummaryEmbedding { get; set; }
+    }
     public abstract class LLMConfig<ModelEnum>
     {
-        public ModelEnum Model { get; set; }
-        public string Provider { get; set; }
+        public ModelEnum Model { get; set; } = default!;
+        public string Provider { get; set; } = string.Empty;
     }
 
     public enum TextCompletionModels
@@ -71,35 +73,46 @@ namespace ChatBot
         Qwen2_72B_instruct,
     }
 
+    public enum TextEmbeddingModels
+    {
+        BGE_M3
+    }
+
     public class TextCompletionLLMConfig: LLMConfig<TextCompletionModels>
     {
         public int? MaxTokensToGenerate { get; set; }
     }
 
+    public class TextEmbeddingLLMConfig : LLMConfig<TextEmbeddingModels>
+    {
+    }
+
     public class HuggingFaceLLMConfig
     {
-        public string ModelName { get; set; }
-        public string ApiKey { get; set; }
+        public string Model { get; set; } = string.Empty;
+        public string ApiKey { get; set; } = string.Empty;
     }
 
     public class DeepInfraLLMConfig
     {
-        public string ModelName { get; set; }
-        public string ApiKey { get; set; }
-        public int MaxTokensToGenerate { get; set; } = 512;
+        public string ModelName { get; set; } = string.Empty;
+        public string ApiKey { get; set; } = string.Empty;
+        public int MaxTokensToGenerate { get; set; } = 0;
     }
 
     public class TelegramBotSettings
     {
-        public string AccessToken { get; set; }
+        public string AccessToken { get; set; } = string.Empty;
     }
 
     public class PostgresConfig
     {
-        public string Host { get; set; }
-        public string Database { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
+        public string Host { get; set; } = string.Empty;
+        public string Database { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
         public int Port { get; set; }
+
+        public bool UseVectorExtension { get; set; }
     }
 }

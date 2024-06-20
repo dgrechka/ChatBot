@@ -17,5 +17,12 @@ namespace ChatBot.LLMs
         public DateTime Timestamp { get; set; }
         public Author Author { get; set; }
         public string Content { get; set; }
+
+        public Message(DateTime timestamp, Author author, string content)
+        {
+            Timestamp = timestamp;
+            Author = author;
+            Content = content;
+        }
     }
 }
