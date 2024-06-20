@@ -73,6 +73,11 @@ namespace ChatBot
                 logger.LogInformation($"{settings.Prompts?.Inline.Count} prompt templates loaded from .NET configuration");
             }
 
+            if (settings.Prompts?.EnableConvSummaryRAG ?? false) {
+                builder.Services.AddScoped<ITemplateSource, PriorConversationSummariesRAGTemplateSourceScoped>();
+                logger.LogInformation("Prior conversation summaries RAG template source is enabled");
+            }
+
             if(settings.Models == null)
             {
                 logger.LogCritical("Models are not configured");
@@ -116,7 +121,8 @@ namespace ChatBot
                 logger.LogInformation("Postgres summary storage enabled");
 
                 if (settings.ConversationProcessing?.EnableConvSummaryEmbeddingsGeneration ?? false) {
-                    builder.Services.AddSingleton<IEmbeddingStorage, PostgresSummaryEmbeddings>();
+                    builder.Services.AddSingleton<IEmbeddingStorageWriter, PostgresSummaryEmbeddings>();
+                    builder.Services.AddSingleton<IEmbeddingStorageLookup>(s => (IEmbeddingStorageLookup)s.GetRequiredService<IEmbeddingStorageWriter>());
                     logger.LogInformation("Postgres embeddings storage enabled");
                 }
             } else
@@ -167,7 +173,8 @@ namespace ChatBot
             builder.Services.AddHostedService<StartupProcessing>();
 
             builder.Services.AddSingleton<ITemplateSource, FileTemplateSource>(p => new FileTemplateSource(System.IO.Path.Combine("Data", "DefaultPrompts")));
-            builder.Services.AddScoped<Prompt.UserMessageContext>();
+            builder.Services.AddScoped<UserMessageContext>();
+            builder.Services.AddScoped<ICurrentConversation, CurrentConversationScoped>();
             builder.Services.AddTransient<IPromptCompiler, Prompt.Compiler>();
 
             using IHost host = builder.Build();

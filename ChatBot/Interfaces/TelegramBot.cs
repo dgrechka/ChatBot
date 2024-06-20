@@ -79,14 +79,31 @@ namespace ChatBot.Interfaces
                 _logger?.LogDebug(prompt.ToString());
 
                 // send typing indicator
-                var typingTask = _bot.SendChatActionAsync(update.Message.Chat.Id, Telegram.Bot.Types.Enums.ChatAction.Typing, cancellationToken: cancellationToken);
+                _ = _bot.SendChatActionAsync(update.Message.Chat.Id, Telegram.Bot.Types.Enums.ChatAction.Typing, cancellationToken: cancellationToken);
+                
+
+
                 var llmStart = Stopwatch.StartNew();
                 var accountingInfo = new AccountingInfo(chat, "ChatTurn");
-                var response = await _llm.GenerateResponseAsync(prompt, accountingInfo, null, cancellationToken);
+                var llmTask = _llm.GenerateResponseAsync(prompt, accountingInfo, null, cancellationToken);
+
+                // telegram typing indicator is only shown for 5 seconds, If we did not get llm response before then, re-sending typing
+                do {
+                    var completeTask = await Task.WhenAny(llmTask, Task.Delay(5000, cancellationToken));
+                    if (completeTask != llmTask)
+                    {
+                        _ = _bot.SendChatActionAsync(update.Message.Chat.Id, Telegram.Bot.Types.Enums.ChatAction.Typing, cancellationToken: cancellationToken);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                } while (true) ;
+
+                var response = llmTask.Result;
                 llmStart.Stop();
                 _logger?.LogInformation($"LLM response time: {llmStart.ElapsedMilliseconds}ms");
 
-                await typingTask;
                 _logger?.LogInformation($"Sending response to {update.Message.Chat.Id}: {response}");
                 var sent = await _bot.SendTextMessageAsync(update.Message.Chat.Id, response);
 

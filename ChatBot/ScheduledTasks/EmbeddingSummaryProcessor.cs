@@ -14,7 +14,7 @@ namespace ChatBot.ScheduledTasks
         private readonly ILogger<EmbeddingSummaryProcessor>? _logger;
         private readonly ITextEmbeddingLLMFactory _embeddingLLMFactory;
         private readonly IBillingLogger? _billingLogger;
-        private readonly IEmbeddingStorage _embeddingStorage;
+        private readonly IEmbeddingStorageWriter _embeddingStorage;
         private readonly ISummaryStorage _summaryStorage;
         private SemaphoreSlim _semaphore = new SemaphoreSlim(1);
         private readonly string _summaryId = "Summary";
@@ -22,7 +22,7 @@ namespace ChatBot.ScheduledTasks
 
         public EmbeddingSummaryProcessor(
             ITextEmbeddingLLMFactory embeddingLLMFactory,
-            IEmbeddingStorage embeddingStorage,
+            IEmbeddingStorageWriter embeddingStorage,
             ISummaryStorage summaryStorage,
             IBillingLogger? billingLogger,
             ILogger<EmbeddingSummaryProcessor>? logger)
@@ -85,7 +85,7 @@ namespace ChatBot.ScheduledTasks
         }
     }
 
-    public interface IEmbeddingStorage {
+    public interface IEmbeddingStorageWriter {
         Task<string?> GetLatestProcessedSummaryRecordId(string summaryId);
         Task SaveEmbedding(string summaryRecordId, float[] embedding);
     }

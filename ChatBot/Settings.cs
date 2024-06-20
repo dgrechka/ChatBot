@@ -43,6 +43,7 @@ namespace ChatBot
 
     public class PromptsSettings
     {
+        public bool EnableConvSummaryRAG { get; set; } = false;
         public Dictionary<string, string>? Inline { get; set; }
     }
 

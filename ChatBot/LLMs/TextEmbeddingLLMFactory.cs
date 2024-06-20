@@ -10,7 +10,8 @@ namespace ChatBot.LLMs
 {
     public enum TextEmbeddingLLMRole
     {
-        ConvSummary
+        ConvSummary,
+        CurrentConversation
     }
 
     public interface ITextEmbeddingLLMFactory
@@ -49,6 +50,7 @@ namespace ChatBot.LLMs
             var modelConfig = role switch
             {
                 TextEmbeddingLLMRole.ConvSummary => _config.ConvSummaryEmbedding,
+                TextEmbeddingLLMRole.CurrentConversation => _config.ConvSummaryEmbedding,
                 _ => throw new ArgumentException($"Role {role} is not supported")
             };
 
@@ -75,7 +77,6 @@ namespace ChatBot.LLMs
                                 _ => throw new ArgumentException("Invalid embedding model", nameof(modelConfig.Model))
                             },
                             MaxTokensToGenerate = 0
-                        
                         }
                     );
                     break;

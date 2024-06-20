@@ -18,18 +18,18 @@ namespace ChatBot.Prompt
         public static string TemplateKey => "llm-formatted-recent-messages-with-reply-primer";
 
         private readonly ILogger<RecentMessagesScopedTemplateSource>? _logger;
-        private readonly IChatHistoryReader _chatHistory;
+        private readonly ICurrentConversation _conversation;
         private readonly IConversationFormatterFactory _conversationFormatterFactory;
         private readonly UserMessageContext _userMessageContext;
 
         public RecentMessagesScopedTemplateSource(
             ILogger<RecentMessagesScopedTemplateSource>? logger,
-            IChatHistoryReader chatHistory,
+            ICurrentConversation conversation,
             IConversationFormatterFactory conversationFormatterFactory,
             UserMessageContext userMessageContext)
         {
             _logger = logger;
-            _chatHistory = chatHistory;
+            _conversation = conversation;
             _userMessageContext = userMessageContext;
             _conversationFormatterFactory = conversationFormatterFactory;
         }
@@ -47,12 +47,7 @@ namespace ChatBot.Prompt
                 return string.Empty;
             }
 
-            List<Message> prevMessages = new();
-
-            await foreach (var prevMessage in _chatHistory.GetMessagesSince(_userMessageContext.Chat, DateTime.UtcNow - TimeSpan.FromHours(1), cancellationToken))
-            {
-                prevMessages.Add(prevMessage);
-            }
+            var prevMessages = await _conversation.GetMessages(cancellationToken);
 
             var prevMessagesWithCurrentMessage = prevMessages.Append(_userMessageContext.Message);
 

@@ -49,7 +49,7 @@ namespace ChatBot.Prompt
 
                 if(recentPropertyValues.Any(v => !string.IsNullOrWhiteSpace(v?.Content)))
                 {
-                    var sb = new StringBuilder("Based on the previous conversations you have learned the following user profile:\n\n");
+                    var sb = new StringBuilder();
                     for(int i = 0; i < enabledPropertyKeys.Count; i++)
                     {
                         if (string.IsNullOrWhiteSpace(recentPropertyValues[i]?.Content))
