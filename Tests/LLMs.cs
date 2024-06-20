@@ -35,7 +35,7 @@ namespace LLMs
             var messages = new List<Message>
             {
                 new Message(new DateTime(2024,06,05, 14,04,04),Author.User,"How are you?"),
-                new Message(new DateTime(2024,06,05, 14,04,05),Author.Bot,"I'm fine?"),
+                new Message(new DateTime(2024,06,05, 14,04,05),Author.Bot,"I'm fine"),
                 new Message(new DateTime(2024,06,05, 14,05,04),Author.User,"See you")
             };
 
