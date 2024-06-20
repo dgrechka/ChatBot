@@ -31,7 +31,7 @@ namespace ChatBot.LLMs.DeepInfra
         public int TokensInput { get; set; }
 
         [JsonPropertyName("tokens_generated")]
-        public int TokensGenerated { get; set; }
+        public int? TokensGenerated { get; set; }
 
     }
 }

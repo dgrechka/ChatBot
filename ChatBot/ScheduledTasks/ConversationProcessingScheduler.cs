@@ -151,7 +151,9 @@ namespace ChatBot.ScheduledTasks
         /// </summary>
         public TimeSpan IdleConversationInterval { get; set; } = TimeSpan.FromHours(1);
 
-        public bool EnableConvSummaryForRAGGeneration { get; set; }
+        public bool EnableConvSummaryGeneration { get; set; }
+
+        public bool EnableConvSummaryEmbeddingsGeneration { get; set; }
 
         public Dictionary<string, string>? UserProfileProperties { get; set; }
     }

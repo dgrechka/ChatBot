@@ -56,8 +56,9 @@ namespace ChatBot
         public TextCompletionLLMConfig? ChatTurn { get; set; }
         public TextCompletionLLMConfig? ConvSummary { get; set; }
         public TextCompletionLLMConfig? UserProfileUpdater { get; set; }
-    }
 
+        public TextEmbeddingLLMConfig? ConvSummaryEmbedding { get; set; }
+    }
     public abstract class LLMConfig<ModelEnum>
     {
         public ModelEnum Model { get; set; } = default!;
@@ -81,9 +82,13 @@ namespace ChatBot
         public int? MaxTokensToGenerate { get; set; }
     }
 
+    public class TextEmbeddingLLMConfig : LLMConfig<TextEmbeddingModels>
+    {
+    }
+
     public class HuggingFaceLLMConfig
     {
-        public string ModelName { get; set; } = string.Empty;
+        public string Model { get; set; } = string.Empty;
         public string ApiKey { get; set; } = string.Empty;
     }
 
@@ -106,5 +111,7 @@ namespace ChatBot
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public int Port { get; set; }
+
+        public bool UseVectorExtension { get; set; }
     }
 }

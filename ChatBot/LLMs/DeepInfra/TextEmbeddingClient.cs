@@ -58,6 +58,12 @@ namespace ChatBot.LLMs.DeepInfra
             _ => throw new ArgumentException("Invalid embedding model", nameof(_settings.ModelName))
         };
 
+        public int EmbeddingDimensionsCount => this.Model switch
+        {
+            TextEmbeddingModels.BGE_M3 => 1024,
+            _ => throw new ArgumentException("Invalid embedding model", nameof(this.Model))
+        };
+
         public class InferenceRequest
         {
             [JsonPropertyName("inputs")]

@@ -27,7 +27,7 @@ namespace ChatBot.Storage
             using var command = connection.CreateCommand();
             command.CommandText = @"
                             CREATE TABLE IF NOT EXISTS Summaries (
-                                RecordId bigserial NOT NULL PRIMARY KEY,
+                                RecordId serial NOT NULL PRIMARY KEY,
                                 ChatId TEXT NOT NULL,
                                 SummaryId TEXT NOT NULL,
                                 Timestamp TIMESTAMPTZ NOT NULL,
@@ -117,13 +117,13 @@ using var connection = _postgres.DataSource.CreateConnection();
                 if (summaryRecordId != null)
                 {
                     int recordIdSince = int.Parse(summaryRecordId);
-                    recordIdFiltering = " AND Id > @SummaryRecordId";
+                    recordIdFiltering = " AND RecordId > @SummaryRecordId";
                     command.Parameters.Add(new Npgsql.NpgsqlParameter("@SummaryRecordId", recordIdSince));
                 }
 
 
                 command.CommandText = $@"
-                    SELECT Id
+                    SELECT RecordId
                     FROM Summaries
                     WHERE SummaryId = @SummaryId {recordIdFiltering}
                 ";
@@ -133,7 +133,7 @@ using var connection = _postgres.DataSource.CreateConnection();
                 using var reader = await command.ExecuteReaderAsync(cancellationToken);
                 while (await reader.ReadAsync(cancellationToken))
                 {
-                    yield return reader.GetString(0);
+                    yield return reader.GetInt32(0).ToString();
                 }
             }
             finally

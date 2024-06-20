@@ -12,5 +12,7 @@ namespace ChatBot.LLMs
         Task<double[]> GenerateEmbeddingAsync(string text, AccountingInfo? accountingInfo, CancellationToken cancellationToken);
 
         public TextEmbeddingModels Model { get; }
+
+        public int EmbeddingDimensionsCount { get; }
     }
 }

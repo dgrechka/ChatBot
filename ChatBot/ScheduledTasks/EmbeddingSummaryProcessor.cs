@@ -12,7 +12,7 @@ namespace ChatBot.ScheduledTasks
     public class EmbeddingSummaryProcessor: ISummaryProcessor
     {
         private readonly ILogger<EmbeddingSummaryProcessor>? _logger;
-        private readonly ITextEmbeddingLLM _embeddingLLM;
+        private readonly ITextEmbeddingLLMFactory _embeddingLLMFactory;
         private readonly IBillingLogger? _billingLogger;
         private readonly IEmbeddingStorage _embeddingStorage;
         private readonly ISummaryStorage _summaryStorage;
@@ -21,13 +21,13 @@ namespace ChatBot.ScheduledTasks
         private bool _isProcessingRequested = false;
 
         public EmbeddingSummaryProcessor(
-            ITextEmbeddingLLM embeddingLLM,
+            ITextEmbeddingLLMFactory embeddingLLMFactory,
             IEmbeddingStorage embeddingStorage,
             ISummaryStorage summaryStorage,
             IBillingLogger? billingLogger,
             ILogger<EmbeddingSummaryProcessor>? logger)
         {
-            _embeddingLLM = embeddingLLM;
+            _embeddingLLMFactory = embeddingLLMFactory;
             _billingLogger = billingLogger;
             _embeddingStorage = embeddingStorage;
             _summaryStorage = summaryStorage;
@@ -49,7 +49,11 @@ namespace ChatBot.ScheduledTasks
                     return;
                 _isProcessingRequested = false;
 
+                _logger?.LogInformation("Embedding generator is waking up...");
+
                 var latestProcessedSummaryId = await _embeddingStorage.GetLatestProcessedSummaryRecordId(_summaryId);
+
+                int counter = 0;
 
                 await foreach (var recordId in _summaryStorage.GetSummaryIdsSince(_summaryId, latestProcessedSummaryId, cancelationToken)) {
                     var summary = await _summaryStorage.GetSummaryByRecordId(recordId, cancelationToken);
@@ -58,12 +62,19 @@ namespace ChatBot.ScheduledTasks
                         continue;
                     }
 
+                    var _embeddingLLM = _embeddingLLMFactory.CreateLLM(TextEmbeddingLLMRole.ConvSummary);
+
                     var accountInfo = new AccountingInfo(summary.Chat, "GenEmbeddingForSummary");
-                    var embeddings = await _embeddingLLM.GenerateEmbeddingAsync(summary.Content, accountInfo, cancelationToken);
+                    var embeddings = (await _embeddingLLM.GenerateEmbeddingAsync(summary.Content, accountInfo, cancelationToken))
+                        .Select(v => (float)v)
+                        .ToArray();
 
                     await _embeddingStorage.SaveEmbedding(recordId, embeddings);
                     _logger?.LogInformation("Persisted embedding for summary {0} ({1}) of chat {2}", summary.RecordId, _summaryId, summary.Chat);
+                    counter++;
                 }
+
+                _logger?.LogInformation("Embedding generator finished processing {0} summaries", counter);
             }
             finally {
                 _semaphore.Release();
@@ -75,7 +86,7 @@ namespace ChatBot.ScheduledTasks
     }
 
     public interface IEmbeddingStorage {
-        Task<string> GetLatestProcessedSummaryRecordId(string summaryId);
-        Task SaveEmbedding(string summaryRecordId, double[] embedding);
+        Task<string?> GetLatestProcessedSummaryRecordId(string summaryId);
+        Task SaveEmbedding(string summaryRecordId, float[] embedding);
     }
 }
