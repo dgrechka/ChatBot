@@ -1,6 +1,6 @@
 ﻿using ChatBot.Interfaces;
 using ChatBot.LLMs;
-using ChatBot.Prompt;
+using ChatBot.Processing.ChatTurn;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -9,15 +9,17 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ChatBot.ScheduledTasks
+namespace ChatBot.Processing.ScheduledTasks
 {
-    public class Summary {
+    public class Summary
+    {
         public string RecordId { get; set; }
         public DateTime Time { get; set; }
         public string Content { get; set; }
         public Chat Chat { get; set; }
 
-        public Summary(string recordId, DateTime time, string content, Chat chat) {
+        public Summary(string recordId, DateTime time, string content, Chat chat)
+        {
             RecordId = recordId;
             Time = time;
             Content = content;
@@ -25,7 +27,8 @@ namespace ChatBot.ScheduledTasks
         }
     }
 
-    public interface ISummaryStorage {
+    public interface ISummaryStorage
+    {
         Task<Summary?> GetLatestSummary(Chat chat, string summaryId, CancellationToken cancellationToken);
 
         Task<Summary?> GetSummaryByRecordId(string recordId, CancellationToken cancellationToken);
@@ -69,7 +72,7 @@ namespace ChatBot.ScheduledTasks
 
         public async Task Process(CancellationToken cancellationToken)
         {
-            if(_context.Chat == null)
+            if (_context.Chat == null)
             {
                 _logger?.LogWarning("Chat is not set in the context");
                 return;

@@ -3,8 +3,9 @@ using ChatBot.Chats;
 using ChatBot.Interfaces;
 using ChatBot.LLMs;
 using ChatBot.LLMs.DeepInfra;
+using ChatBot.Processing.ChatTurn;
+using ChatBot.Processing.ScheduledTasks;
 using ChatBot.Prompt;
-using ChatBot.ScheduledTasks;
 using ChatBot.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -68,8 +69,16 @@ namespace ChatBot
                     .AddScoped<ITemplateSource, InlineConfigUserSpecificScopedTemplateSource>(p => new InlineConfigUserSpecificScopedTemplateSource(
                         p.GetRequiredService<ILogger<InlineConfigUserSpecificScopedTemplateSource>>(),
                         settings.Prompts?.Inline!,
-                        p.GetRequiredService<Prompt.UserMessageContext>()));
-                
+                        p.GetRequiredService<UserMessageContext>()));
+
+                builder.Services.AddScoped<IChatAuthorization, PromptDefinedAuthorizationScoped>(
+                s => new PromptDefinedAuthorizationScoped(
+                    s.GetRequiredService<ILogger<PromptDefinedAuthorizationScoped>>(),
+                    s.GetRequiredService<UserMessageContext>(),
+                    settings.Prompts.Inline,
+                    "user-basic-introduction-"
+                    ));
+
                 logger.LogInformation($"{settings.Prompts?.Inline.Count} prompt templates loaded from .NET configuration");
             }
 
@@ -77,6 +86,9 @@ namespace ChatBot
                 builder.Services.AddScoped<ITemplateSource, PriorConversationSummariesRAGTemplateSourceScoped>();
                 logger.LogInformation("Prior conversation summaries RAG template source is enabled");
             }
+
+            builder.Services.AddSingleton(settings.Prompts?.Authorization!);
+            builder.Services.AddScoped<ITemplateSource, ChatAuthorizationTemplateSourceScoped>();
 
             if(settings.Models == null)
             {
@@ -161,7 +173,7 @@ namespace ChatBot
                 }
                 else {
                     logger.LogWarning("Personality traits conversation processing is NOT configured. thus DISABLED");
-                    // TODO: add correponding template source
+                    // TODO: add corresponding template source
                 }
             }
             else {

@@ -1,5 +1,6 @@
 ﻿using ChatBot.Interfaces;
 using ChatBot.LLMs;
+using ChatBot.Processing.ChatTurn;
 using ChatBot.Prompt;
 using Microsoft.Extensions.Logging;
 using System;
@@ -11,7 +12,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace ChatBot.ScheduledTasks
+namespace ChatBot.Processing.ScheduledTasks
 {
     public class PersonalityTraitsExtractorScoped : IConversationProcessor
     {
@@ -43,7 +44,8 @@ namespace ChatBot.ScheduledTasks
 
         public async Task Process(CancellationToken cancellationToken)
         {
-            if (_context.Chat == null) {
+            if (_context.Chat == null)
+            {
                 _logger?.LogWarning("Chat is not set in the context");
                 return;
             }
@@ -95,12 +97,12 @@ namespace ChatBot.ScheduledTasks
                 runtimeTemplates["user-profile-json"] = userProfileJson;
 
                 var accountingInfo = new AccountingInfo(_context.Chat, "ProfileUpdateInfoExtractor");
-                
+
                 var _llm = _llmFactory.CreateLLM(TextGenerationLLMRole.UserProfileUpdater);
 
                 var callSettings = new LLMCallSettings()
                 {
-                    StopStrings = [.._llm.DefaultStopStrings, "\n```"],
+                    StopStrings = [.. _llm.DefaultStopStrings, "\n```"],
                     ProduceJSON = true
                 };
 

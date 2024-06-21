@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ChatBot.Prompt
+namespace ChatBot.Processing.ChatTurn
 {
     public class UserMessageContext
     {

@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ChatBot.ScheduledTasks
+namespace ChatBot.Processing.ScheduledTasks
 {
     public class StartupProcessing : IHostedService
     {
@@ -42,7 +42,7 @@ namespace ChatBot.ScheduledTasks
                 _logger.LogInformation("Scheduling startup processing of all chats");
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 int counter = 0;
-                await foreach (var (chat,lastMessageTime) in _chatHistoryReader.GetChatsLastMessageTime(cancellationToken))
+                await foreach (var (chat, lastMessageTime) in _chatHistoryReader.GetChatsLastMessageTime(cancellationToken))
                 {
                     await _conversationProcessor.NotifyLatestMessageTime(chat, lastMessageTime);
                     counter++;
@@ -53,7 +53,8 @@ namespace ChatBot.ScheduledTasks
 
             startUpTasks.Add(chatProcessing);
 
-            if (_summaryProcessor != null && _summaryStorage != null) {
+            if (_summaryProcessor != null && _summaryStorage != null)
+            {
                 var summaryProcessing = Task.Run(async () =>
                 {
                     _logger.LogInformation("Scheduling startup processing of all summaries");
@@ -61,7 +62,7 @@ namespace ChatBot.ScheduledTasks
                     int counter = 0;
 
                     await _summaryProcessor.NotifyNewSummaryPersisted("Summary");
-                    
+
                     sw.Stop();
                     _logger.LogInformation($"Scheduled startup processing of {counter} summaries in {sw.ElapsedMilliseconds}ms");
                 });
@@ -76,7 +77,7 @@ namespace ChatBot.ScheduledTasks
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            return _startupProcessing  ?? Task.CompletedTask;
+            return _startupProcessing ?? Task.CompletedTask;
         }
     }
 }

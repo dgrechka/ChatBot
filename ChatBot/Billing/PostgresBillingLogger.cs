@@ -47,22 +47,31 @@ namespace ChatBot.Billing
             await EnsureInitialized(token);
 
             using var connection = _postgres.DataSource.CreateConnection();
-            await connection.OpenAsync(token);
-            using var command = connection.CreateCommand();
-            command.CommandText = @"
+            try
+            {
+                await connection.OpenAsync(token);
+                using var command = connection.CreateCommand();
+                command.CommandText = @"
                 INSERT INTO LLMCost (ChatId, Provider, Model, CallPurpose, InputTokenCount, GeneratedTokenCount, EstimatedCost, Currency, Timestamp)
                 VALUES (@ChatId, @Provider, @Model, @CallPurpose, @InputTokenCount, @GeneratedTokenCount, @EstimatedCost, @Currency, @Timestamp);";
-            command.Parameters.AddWithValue("ChatId", accountingInfo.Chat.ToString());
-            command.Parameters.AddWithValue("Provider", provider);
-            command.Parameters.AddWithValue("Model", model);
-            command.Parameters.AddWithValue("CallPurpose", accountingInfo.CallPurpose);
-            command.Parameters.AddWithValue("InputTokenCount", inputTokenCount);
-            command.Parameters.AddWithValue("GeneratedTokenCount", generatedTokenCount);
-            command.Parameters.AddWithValue("EstimatedCost", estimatedCost);
-            command.Parameters.AddWithValue("Currency", currency);
-            command.Parameters.AddWithValue("Timestamp", DateTime.UtcNow);
-            await command.ExecuteNonQueryAsync(token);
-            await connection.CloseAsync();
+                command.Parameters.AddWithValue("ChatId", accountingInfo.Chat.ToString());
+                command.Parameters.AddWithValue("Provider", provider);
+                command.Parameters.AddWithValue("Model", model);
+                command.Parameters.AddWithValue("CallPurpose", accountingInfo.CallPurpose);
+                command.Parameters.AddWithValue("InputTokenCount", inputTokenCount);
+                command.Parameters.AddWithValue("GeneratedTokenCount", generatedTokenCount);
+                command.Parameters.AddWithValue("EstimatedCost", estimatedCost);
+                command.Parameters.AddWithValue("Currency", currency);
+                command.Parameters.AddWithValue("Timestamp", DateTime.UtcNow);
+                await command.ExecuteNonQueryAsync(token);
+
+                _logger?.LogInformation("Logged LLM cost for chat {ChatId} with provider {Provider}, model {Model}, call purpose {CallPurpose}, input token count {InputTokenCount}, generated token count {GeneratedTokenCount}, estimated cost {EstimatedCost} {Currency}",
+                    accountingInfo.Chat, provider, model, accountingInfo.CallPurpose, inputTokenCount, generatedTokenCount, estimatedCost, currency);
+            }
+            finally
+            {
+                await connection.CloseAsync();
+            }
         }
     }
 }

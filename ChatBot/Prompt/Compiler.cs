@@ -134,7 +134,7 @@ namespace ChatBot.Prompt
             
             var compiledTemplateStr = compiledTemplates[keyToCompile];
 
-            _logger?.LogInformation($"{compiledTemplates.Count} templates compiled. Compilation took {sw.Elapsed}. {keyToCompile} length is {compiledTemplateStr.Length}");
+            _logger?.LogInformation($"{compiledTemplates.Count} templates compiled. Compilation took {sw.ElapsedMilliseconds}ms. {keyToCompile} length is {compiledTemplateStr.Length}");
 
             return compiledTemplateStr;
         }

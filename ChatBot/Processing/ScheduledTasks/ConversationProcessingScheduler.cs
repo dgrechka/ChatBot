@@ -1,5 +1,6 @@
 ﻿using ChatBot.Interfaces;
 using ChatBot.LLMs;
+using ChatBot.Processing.ChatTurn;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -10,7 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ChatBot.ScheduledTasks
+namespace ChatBot.Processing.ScheduledTasks
 {
     public interface IConversationProcessor
     {
@@ -22,9 +23,9 @@ namespace ChatBot.ScheduledTasks
         Task Process(CancellationToken cancellationToken);
     }
 
-    public class ConversationProcessingScheduler: IConversationProcessingScheduler
+    public class ConversationProcessingScheduler : IConversationProcessingScheduler
     {
-        private readonly Dictionary<Chat,DateTime> chatToScheduledProcessingTime = [];
+        private readonly Dictionary<Chat, DateTime> chatToScheduledProcessingTime = [];
         private readonly ILogger<ConversationProcessingScheduler>? _logger;
         private readonly ConversationProcessingSettings _settings;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
@@ -67,8 +68,15 @@ namespace ChatBot.ScheduledTasks
                     var sw = Stopwatch.StartNew();
                     using (var scope = _serviceScopeFactory.CreateAsyncScope())
                     {
-                        var userMessageContext = scope.ServiceProvider.GetRequiredService<Prompt.UserMessageContext>();
+                        var userMessageContext = scope.ServiceProvider.GetRequiredService<UserMessageContext>();
                         userMessageContext.Chat = chat;
+
+                        var authorization = scope.ServiceProvider.GetRequiredService<IChatAuthorization>();
+                        if(!await authorization.IsAuthorized())
+                        {
+                            _logger?.LogInformation($"Chat {chat} is not authorized. Skipping processing.");
+                            continue;
+                        }
 
                         var _processors = scope.ServiceProvider.GetServices<IConversationProcessor>().ToList();
                         _logger?.LogInformation($"Processing conversation {chat} with {_processors.Count} processors");
@@ -97,11 +105,12 @@ namespace ChatBot.ScheduledTasks
         private async Task ScheduleProcessing()
         {
             await _semaphore.WaitAsync();
-            try {
+            try
+            {
                 // Find the next scheduled processing time
                 if (chatToScheduledProcessingTime.Count == 0)
                 {
-                    if(_timer != null)
+                    if (_timer != null)
                     {
                         await _timer.DisposeAsync();
                         _timer = null;
@@ -125,12 +134,13 @@ namespace ChatBot.ScheduledTasks
                     }
                     else
                     {
-                        _timer = new Timer(async _ => await this.Process(), null, timeToNextScheduledProcessing, Timeout.InfiniteTimeSpan);
+                        _timer = new Timer(async _ => await Process(), null, timeToNextScheduledProcessing, Timeout.InfiniteTimeSpan);
                     }
                     _logger?.LogInformation($"Next conversation processing scheduled in {timeToNextScheduledProcessing}");
                 }
             }
-            finally {
+            finally
+            {
                 _semaphore.Release();
             }
         }

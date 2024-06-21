@@ -1,5 +1,6 @@
 ﻿using ChatBot.LLMs;
-using ChatBot.ScheduledTasks;
+using ChatBot.Processing.ScheduledTasks;
+using ChatBot.Prompt;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -45,6 +46,8 @@ namespace ChatBot
     {
         public bool EnableConvSummaryRAG { get; set; } = false;
         public Dictionary<string, string>? Inline { get; set; }
+
+        public AuthorizationSettings? Authorization { get; set; }
     }
 
     public class PersistenceConfig
