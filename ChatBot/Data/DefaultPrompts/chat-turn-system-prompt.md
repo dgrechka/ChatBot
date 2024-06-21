@@ -14,7 +14,9 @@ Based on the previous conversations you have learned the following info:
 ```
 
 # Current conversation context
-The following prior conversations might be relevant to the currently ongoing conversation:
-```prior-conversations
+The *information* discussed in the following prior conversations might be relevant to the currently ongoing conversation
+[Start of prior conversations section]
 ◄prior-conversations►
-```
+[End of prior conversations section]
+
+Now, please continue the conversation with the user.
