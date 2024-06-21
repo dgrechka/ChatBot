@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using ChatBot.LLMs;
 using Microsoft.VisualBasic;
 
-namespace ChatBot.ScheduledTasks
+namespace ChatBot.Processing.ScheduledTasks
 {
     public class Helpers
     {
@@ -44,7 +44,8 @@ namespace ChatBot.ScheduledTasks
             }
         }
 
-        public static string FormatConversation(IEnumerable<Message> conversation, out DateTime? firstMessageTime, out DateTime? lastMessageTime, out int messageCounter) {
+        public static string FormatConversation(IEnumerable<Message> conversation, out DateTime? firstMessageTime, out DateTime? lastMessageTime, out int messageCounter)
+        {
             StringBuilder convSB = new();
             bool first = true;
             firstMessageTime = null;

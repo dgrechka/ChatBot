@@ -1,5 +1,6 @@
 ﻿using ChatBot.Interfaces;
 using ChatBot.LLMs;
+using ChatBot.Processing.ChatTurn;
 using ChatBot.Prompt;
 using Microsoft.Extensions.Logging;
 using System;
@@ -9,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ChatBot.ScheduledTasks
+namespace ChatBot.Processing.ScheduledTasks
 {
     public class GeneralSummaryExtractorScoped : ConversationProcessorScoped
     {
@@ -42,7 +43,7 @@ namespace ChatBot.ScheduledTasks
                 out DateTime? lastMessageTime,
                 out int counter);
 
-            if(firstMessageTime == null || lastMessageTime == null)
+            if (firstMessageTime == null || lastMessageTime == null)
             {
                 _logger?.LogWarning("No messages in conversation to process");
                 return;
@@ -55,9 +56,9 @@ namespace ChatBot.ScheduledTasks
 
             var _llm = _llmFactory.CreateLLM(TextGenerationLLMRole.ConvSummary);
 
-            var prompt = await _promptCompiler.CompilePrompt($"{_llm.PromptFormatIdentifier}-conversation-summary", runtimeTemplates,  cancellationToken);
-            
-            if(_context.Chat == null)
+            var prompt = await _promptCompiler.CompilePrompt($"{_llm.PromptFormatIdentifier}-conversation-summary", runtimeTemplates, cancellationToken);
+
+            if (_context.Chat == null)
             {
                 _logger?.LogWarning("Chat is not set in the context");
                 return;
@@ -66,13 +67,13 @@ namespace ChatBot.ScheduledTasks
             var accountingInfo = new AccountingInfo(_context.Chat, "ConversationSummary");
             var callSettings = new LLMCallSettings()
             {
-                StopStrings = [.._llm.DefaultStopStrings, "\n```" ],
+                StopStrings = [.. _llm.DefaultStopStrings, "\n```"],
                 ProduceJSON = true,
             };
-            
+
             var summary = await _llm.GenerateResponseAsync(prompt, accountingInfo, callSettings, cancellationToken);
 
-            var summaryHeader = $"The conversation started at {Helpers.FormatTimestamp(firstMessageTime)},\nlasted for {Math.Round((lastMessageTime-firstMessageTime).Value.TotalMinutes)} minutes and consisted of {counter} messages.\n\n";
+            var summaryHeader = $"The conversation started at {Helpers.FormatTimestamp(firstMessageTime)},\nlasted for {Math.Round((lastMessageTime - firstMessageTime).Value.TotalMinutes)} minutes and consisted of {counter} messages.\n\n";
 
             var wholeSummary = summaryHeader + summary;
 
@@ -82,14 +83,15 @@ namespace ChatBot.ScheduledTasks
             // save summary to storage
             await _summaryStorage.SaveSummary(_context.Chat, _summaryId, lastMessageTime.Value, wholeSummary, cancellationToken);
 
-            if(_summaryProcessor != null)
+            if (_summaryProcessor != null)
             {
                 await _summaryProcessor.NotifyNewSummaryPersisted(_summaryId);
             }
         }
     }
 
-    public interface ISummaryProcessor {
+    public interface ISummaryProcessor
+    {
         Task NotifyNewSummaryPersisted(string summaryId);
     }
 }

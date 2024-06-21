@@ -7,9 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ChatBot.ScheduledTasks
+namespace ChatBot.Processing.ScheduledTasks
 {
-    public class EmbeddingSummaryProcessor: ISummaryProcessor
+    public class EmbeddingSummaryProcessor : ISummaryProcessor
     {
         private readonly ILogger<EmbeddingSummaryProcessor>? _logger;
         private readonly ITextEmbeddingLLMFactory _embeddingLLMFactory;
@@ -41,10 +41,12 @@ namespace ChatBot.ScheduledTasks
             return Task.CompletedTask;
         }
 
-        private async Task GenerateEmbeddingsIfNeeded() {
+        private async Task GenerateEmbeddingsIfNeeded()
+        {
             var cancelationToken = new CancellationToken();
             await _semaphore.WaitAsync();
-            try {
+            try
+            {
                 if (!_isProcessingRequested)
                     return;
                 _isProcessingRequested = false;
@@ -55,9 +57,11 @@ namespace ChatBot.ScheduledTasks
 
                 int counter = 0;
 
-                await foreach (var recordId in _summaryStorage.GetSummaryIdsSince(_summaryId, latestProcessedSummaryId, cancelationToken)) {
+                await foreach (var recordId in _summaryStorage.GetSummaryIdsSince(_summaryId, latestProcessedSummaryId, cancelationToken))
+                {
                     var summary = await _summaryStorage.GetSummaryByRecordId(recordId, cancelationToken);
-                    if (summary == null) {
+                    if (summary == null)
+                    {
                         _logger?.LogWarning($"Summary with recordId {recordId} not found");
                         continue;
                     }
@@ -76,7 +80,8 @@ namespace ChatBot.ScheduledTasks
 
                 _logger?.LogInformation("Embedding generator finished processing {0} summaries", counter);
             }
-            finally {
+            finally
+            {
                 _semaphore.Release();
             }
 
@@ -85,7 +90,8 @@ namespace ChatBot.ScheduledTasks
         }
     }
 
-    public interface IEmbeddingStorageWriter {
+    public interface IEmbeddingStorageWriter
+    {
         Task<string?> GetLatestProcessedSummaryRecordId(string summaryId);
         Task SaveEmbedding(string summaryRecordId, float[] embedding);
     }

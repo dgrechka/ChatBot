@@ -1,4 +1,5 @@
-﻿using ChatBot.ScheduledTasks;
+﻿using ChatBot.Processing.ChatTurn;
+using ChatBot.Processing.ScheduledTasks;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;

@@ -136,7 +136,7 @@ namespace ChatBot.LLMs.DeepInfra
             }
 
             var response = await CallLLM(request, cancellationToken);
-            _logger?.LogInformation($"InputTokens: {response?.Status?.TokensInput}; OutputTokens: {response?.Status?.TokensGenerated}; Cost: {response?.Status?.Cost}; RuntimeMs: {response?.Status?.RuntimeMs}");
+            _logger?.LogInformation($"Got LLM response. RuntimeMs: {response?.Status?.RuntimeMs}");
 
             if (accountingInfo != null && _billingLogger != null)
             {

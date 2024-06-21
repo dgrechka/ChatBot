@@ -47,7 +47,7 @@ namespace ChatBot.LLMs.DeepInfra
                 throw new Exception($"Unexpected number of embeddings: {response?.Embeddings?.Length ?? 0}");
             }
 
-            _logger?.LogInformation($"DeepInfraInferenceClient[{_settings.ModelName}]: Generated embedding for text length {text.Length}, resulting embedding dimensions: {response?.Embeddings[0]?.Length ?? 0}");
+            _logger?.LogInformation($"Got LLM response in {response?.Status?.RuntimeMs}ms,Generated embedding for text length {text.Length}, resulting embedding dimensions: {response?.Embeddings[0]?.Length ?? 0}");
             
             return response!.Embeddings[0];
         }

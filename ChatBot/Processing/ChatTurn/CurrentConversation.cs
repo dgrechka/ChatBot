@@ -1,6 +1,6 @@
 ﻿using ChatBot.Interfaces;
 using ChatBot.LLMs;
-using ChatBot.ScheduledTasks;
+using ChatBot.Processing.ScheduledTasks;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ChatBot.Prompt
+namespace ChatBot.Processing.ChatTurn
 {
     public interface ICurrentConversation
     {
@@ -46,7 +46,8 @@ namespace ChatBot.Prompt
             await _semaphore.WaitAsync();
             try
             {
-                if (_cache == null) {
+                if (_cache == null)
+                {
 
                     var latestSummary = await _summaryStorage.GetLatestSummary(_userMessageContext.Chat, "Summary", cancellationToken);
 

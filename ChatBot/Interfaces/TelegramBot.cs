@@ -1,4 +1,5 @@
 ﻿using ChatBot.LLMs;
+using ChatBot.Processing.ChatTurn;
 using ChatBot.Prompt;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -62,7 +63,7 @@ namespace ChatBot.Interfaces
             {
                 var _llm = _llmFactory.CreateLLM(TextGenerationLLMRole.ChatTurn);
 
-                var userMessageContext = scope.ServiceProvider.GetRequiredService<Prompt.UserMessageContext>();
+                var userMessageContext = scope.ServiceProvider.GetRequiredService<UserMessageContext>();
                 userMessageContext.Chat = chat;
                 userMessageContext.ActiveModel = _llm.Model;
                 var userMessage =
@@ -118,7 +119,7 @@ namespace ChatBot.Interfaces
                                 userMessage,
                                 new Message(now, Author.Bot, response)
                             ], cancellationToken);
-
+                        
                         await _conversationProcessor.NotifyLatestMessageTime(chat, now);
                     };
 

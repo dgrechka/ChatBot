@@ -1,5 +1,6 @@
 ﻿using ChatBot.Interfaces;
 using ChatBot.LLMs;
+using ChatBot.Processing.ChatTurn;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
