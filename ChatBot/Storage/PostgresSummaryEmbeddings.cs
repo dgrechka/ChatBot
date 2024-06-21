@@ -49,7 +49,7 @@ namespace ChatBot.Storage
                 cmd.CommandText = $@"
                     CREATE TABLE IF NOT EXISTS {_tableName} (
                         EmbeddingId serial NOT NULL PRIMARY KEY,
-                        SummaryRecordId integer NOT NULL references Summaries(RecordId),
+                        SummaryRecordId integer NOT NULL references Summaries(RecordId) UNIQUE,
                         Embedding vector({_embeddingLLM.EmbeddingDimensionsCount})
                     )";
 
@@ -77,10 +77,13 @@ namespace ChatBot.Storage
                 using var cmd = conn.CreateCommand();
                 cmd.CommandText = $@"
                     SELECT MAX(s.RecordId) FROM {_tableName} as e
-                    INNER JOIN Summaries as s on s.RecordId = e.SummaryRecordId";
-                
-                var result = (await cmd.ExecuteScalarAsync(cancelToken)) as int?;
-                return result?.ToString();
+                    INNER JOIN Summaries as s on s.RecordId = e.SummaryRecordId
+                    WHERE s.SummaryId = @SummaryId";
+
+                cmd.Parameters.AddWithValue("SummaryId", summaryId);
+
+                var result = (await cmd.ExecuteScalarAsync(cancelToken));
+                return (result as int?)?.ToString();
                 
             }
             finally

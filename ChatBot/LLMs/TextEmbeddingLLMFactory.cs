@@ -11,7 +11,8 @@ namespace ChatBot.LLMs
     public enum TextEmbeddingLLMRole
     {
         ConvSummary,
-        CurrentConversation
+        CurrentConversation,
+        CurrentUserMessage
     }
 
     public interface ITextEmbeddingLLMFactory
@@ -51,6 +52,7 @@ namespace ChatBot.LLMs
             {
                 TextEmbeddingLLMRole.ConvSummary => _config.ConvSummaryEmbedding,
                 TextEmbeddingLLMRole.CurrentConversation => _config.ConvSummaryEmbedding,
+                TextEmbeddingLLMRole.CurrentUserMessage => _config.ConvSummaryEmbedding,
                 _ => throw new ArgumentException($"Role {role} is not supported")
             };
 

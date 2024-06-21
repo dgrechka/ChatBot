@@ -62,41 +62,42 @@ namespace ChatBot.Prompt
                 sb.AppendLine($"{message.Author} at {Helpers.FormatTimestamp(message.Timestamp)}: {message.Content}");
             }
 
-            var currentConvEmbedding = await _textEmbeddingLLMFactory
-                .CreateLLM(TextEmbeddingLLMRole.CurrentConversation)
-                .GenerateEmbeddingAsync(
-                    sb.ToString(),
-                    new AccountingInfo(_userMessageContext.Chat, "CurrentConversationEmbedding"),
-                    cancellationToken);
+            var getRelatedEmbeddings = async (String text, string aim) => {
+                var curEmbedding = await _textEmbeddingLLMFactory
+                    .CreateLLM(TextEmbeddingLLMRole.CurrentUserMessage)
+                    .GenerateEmbeddingAsync(
+                        text,
+                        new AccountingInfo(_userMessageContext.Chat, aim),
+                        cancellationToken);
 
-            if (currentConvEmbedding == null)
-            {
-                _logger?.LogWarning("Failed to generate embedding for current conversation");
-                return string.Empty;
-            }
+                List<Summary> result = new List<Summary>();
 
-
-            sb.Clear();
-
-            bool first = true;
-            await foreach (var summary in _embeddingStorageLookup.GetRelevantSummaries(
-                "Summary",
-                _userMessageContext.Chat,
-                currentConvEmbedding.Select(v => (float)v).ToArray(),
-                cancellationToken))
-            {
-                if (first)
+                if (curEmbedding == null)
                 {
-                    first = false;
+                    _logger?.LogWarning("Failed to generate embedding for {aim}",aim);
+                    return result;
                 }
-                else
-                {
-                    sb.AppendLine("---");
+                
+                await foreach (var summary in _embeddingStorageLookup.GetRelevantSummaries(
+                    "Summary",
+                    _userMessageContext.Chat,
+                    curEmbedding.Select(v => (float)v).ToArray(),
+                    cancellationToken)) {
+                    result.Add(summary);
                 }
-                sb.AppendLine(summary.Content);
-            }
 
-            return sb.ToString();
+                return result;
+            };
+
+            var convRelatedSummariesTask = getRelatedEmbeddings(sb.ToString(), "CurrentConversationEmbeddingGen");
+            var messageRelatedSummariesTask = getRelatedEmbeddings(_userMessageContext.Message.Content, "LatestUserMessageEmbeddingGen");
+
+            var summaries = (await Task.WhenAll(convRelatedSummariesTask, messageRelatedSummariesTask))
+                .SelectMany(s => s)
+                .DistinctBy(s => s.RecordId)
+                .Select(s => $"```conversation\n{s.Content}\n```");
+
+            return string.Join("\n\n", summaries);
         }
 
         public Task<bool> HasKey(string key)
