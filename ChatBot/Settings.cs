@@ -1,4 +1,5 @@
-﻿using ChatBot.LLMs;
+﻿using ChatBot.Auxiliary;
+using ChatBot.LLMs;
 using ChatBot.Processing.ScheduledTasks;
 using ChatBot.Prompt;
 using System;
@@ -13,6 +14,8 @@ namespace ChatBot
     public class Settings
     {
         public TelegramBotSettings? TelegramBot { get; set; }
+
+        public SignalSettings? Signal { get; set; }
 
         public ModelsConfig? Models { get; set; }
 
