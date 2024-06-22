@@ -81,6 +81,8 @@ namespace ChatBot
                 logger.LogWarning("Signal bot is not configured");
             }
 
+            builder.Services.AddSingleton<IIdentityMapper, IdentityMapper>(s => new IdentityMapper(settings.UserIdentities ?? new Dictionary<string, PersonIdentifiers>()));
+
             if (settings.Prompts?.Inline != null)
             {
                 builder.Services

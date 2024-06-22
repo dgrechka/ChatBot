@@ -17,6 +17,8 @@ namespace ChatBot
 
         public SignalSettings? Signal { get; set; }
 
+        public Dictionary<string, Processing.ChatTurn.PersonIdentifiers>? UserIdentities { get; set; }
+
         public ModelsConfig? Models { get; set; }
 
         /// <summary>

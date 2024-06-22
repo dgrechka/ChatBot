@@ -11,7 +11,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
-using Telegram.Bot.Requests;
 
 namespace ChatBot.Interfaces
 {
@@ -23,6 +22,7 @@ namespace ChatBot.Interfaces
     {
         private readonly TelegramBotClient _bot;
         private readonly ILogger<TelegramBot>? _logger;
+        private readonly IIdentityMapper _identityMapper;
         private readonly ITextGenerationLLMFactory _llmFactory;
         private readonly IChatHistoryWriter _chatHistoryWriter;
         private readonly IConversationProcessingScheduler _conversationProcessor;
@@ -34,6 +34,7 @@ namespace ChatBot.Interfaces
 
         public TelegramBot(
             ILogger<TelegramBot>? logger,
+            IIdentityMapper identityMapper,
             IServiceScopeFactory serviceScopeFactory,
             IConversationProcessingScheduler conversationProcessor,
             IChatHistoryWriter chatHistoryWriter,
@@ -43,6 +44,7 @@ namespace ChatBot.Interfaces
             _serviceScopeFactory = serviceScopeFactory;
             _bot = new TelegramBotClient(settings.AccessToken);
             _logger = logger;
+            _identityMapper = identityMapper;
             _llmFactory = llmFactory;
             _chatHistoryWriter = chatHistoryWriter;
             _conversationProcessor = conversationProcessor;
@@ -55,9 +57,9 @@ namespace ChatBot.Interfaces
                 _logger?.LogWarning("Received update without message");
                 return update.Id + 1;
             }
-            _logger?.LogInformation($"Received message from {update.Message.Chat.Id}: {update.Message.Text}");
+            var chat = _identityMapper.TryGetUniformIdentifier(new Chat("Telegram", update.Message.Chat.Id.ToString()));
 
-            var chat = new Chat("Telegram", update.Message.Chat.Id.ToString());
+            _logger?.LogInformation($"Received message from {update.Message.Chat.Id} [{chat}]: {update.Message.Text}");;
 
             using (var scope = _serviceScopeFactory.CreateAsyncScope())
             {

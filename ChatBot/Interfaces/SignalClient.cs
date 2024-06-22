@@ -57,6 +57,7 @@ namespace ChatBot.Interfaces
         private readonly ISignalClient _client;
         private readonly ILogger<SignalBot>? _logger;
         private readonly ITextGenerationLLMFactory _llmFactory;
+        private readonly IIdentityMapper _identityMapper;
         private readonly IChatHistoryWriter _chatHistoryWriter;
         private readonly IConversationProcessingScheduler _conversationProcessor;
 
@@ -69,11 +70,13 @@ namespace ChatBot.Interfaces
             ILogger<SignalBot>? logger,
             ISignalClient client,
             IServiceScopeFactory serviceScopeFactory,
+            IIdentityMapper identityMapper,
             IConversationProcessingScheduler conversationProcessor,
             IChatHistoryWriter chatHistoryWriter,
             ITextGenerationLLMFactory llmFactory)
         {
             _serviceScopeFactory = serviceScopeFactory;
+            _identityMapper = identityMapper;
             _client = client;
             _logger = logger;
             _llmFactory = llmFactory;
@@ -91,8 +94,8 @@ namespace ChatBot.Interfaces
                     var messages = _client.GetMessages(cancellationToken);
                     await foreach (var message in messages)
                     {
-                        _logger?.LogInformation($"Received message from {message.SourceNumber}: {message.Message}");
-                        var chat = new Chat("Signal", message.SourceNumber.Substring(1));
+                        var chat = _identityMapper.TryGetUniformIdentifier(new Chat("Signal", message.SourceNumber.Substring(1)));
+                        _logger?.LogInformation($"Received message from {message.SourceNumber} [{chat}]: {message.Message}");
 
                         _ = _client.ConfirmMessageRead(message.SourceNumber, message.Timestamp);
 
@@ -110,6 +113,7 @@ namespace ChatBot.Interfaces
                                     offset.UtcDateTime,
                                     Author.User,
                                     message.Message ?? string.Empty);
+                            userMessageContext.Message = userMessage;
 
                             var promptCompiler = scope.ServiceProvider.GetRequiredService<IPromptCompiler>();
 
