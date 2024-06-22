@@ -1,4 +1,5 @@
-﻿using ChatBot.Billing;
+﻿using ChatBot.Auxiliary;
+using ChatBot.Billing;
 using ChatBot.Chats;
 using ChatBot.Interfaces;
 using ChatBot.LLMs;
@@ -61,6 +62,26 @@ namespace ChatBot
             else {
                 logger.LogWarning("Telegram bot is not configured");
             }
+
+            if(settings.Signal != null)
+            {
+                if (string.IsNullOrWhiteSpace(settings.Signal.ApiGatewayAddress) || string.IsNullOrWhiteSpace(settings.Signal.SelfNumber))
+                {
+                    logger.LogCritical("Signal settings are not set");
+                    Environment.Exit(1);
+                }
+
+                builder.Services
+                    .AddSingleton(settings.Signal)
+                    .AddHostedService<SignalBot>();
+                builder.Services.AddSingleton<ISignalClient, SignalRestClient>();
+                logger.LogInformation("Signal bot is enabled");
+            }
+            else {
+                logger.LogWarning("Signal bot is not configured");
+            }
+
+            builder.Services.AddSingleton<IIdentityMapper, IdentityMapper>(s => new IdentityMapper(settings.UserIdentities ?? new Dictionary<string, PersonIdentifiers>()));
 
             if (settings.Prompts?.Inline != null)
             {

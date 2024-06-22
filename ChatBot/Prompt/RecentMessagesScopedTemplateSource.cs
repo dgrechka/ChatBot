@@ -48,6 +48,12 @@ namespace ChatBot.Prompt
                 return string.Empty;
             }
 
+            if(_userMessageContext.Message == null)
+            {
+                _logger?.LogWarning("Message is not set in the context");
+                return string.Empty;
+            }
+
             var prevMessages = await _conversation.GetMessages(cancellationToken);
 
             var prevMessagesWithCurrentMessage = prevMessages.Append(_userMessageContext.Message);
