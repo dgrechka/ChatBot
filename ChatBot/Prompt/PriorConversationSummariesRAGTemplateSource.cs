@@ -18,6 +18,7 @@ namespace ChatBot.Prompt
         private readonly UserMessageContext _userMessageContext;
         private readonly ITextEmbeddingLLMFactory _textEmbeddingLLMFactory;
         private readonly IEmbeddingStorageLookup _embeddingStorageLookup;
+        private readonly ISummaryStorage _summaryStorage;
         private readonly ICurrentConversation _conversation;
         private readonly ILogger<PriorConversationSummariesRAGTemplateSourceScoped>? _logger;
 
@@ -32,6 +33,7 @@ namespace ChatBot.Prompt
             _logger = logger;
             _userMessageContext = userMessageContext;
             _textEmbeddingLLMFactory = textEmbeddingLLMFactory;
+            _summaryStorage = summaryStorage;
             _conversation = conversation;
             _embeddingStorageLookup = embeddingStorageLookup;
         }
@@ -53,7 +55,7 @@ namespace ChatBot.Prompt
                 _logger?.LogWarning("Message is not set in the context");
                 return string.Empty;
             }
-            
+
             List<Task<List<Summary>>> summaryTasks = new();
 
             var getRelatedEmbeddings = async (String text, string aim) =>
@@ -100,6 +102,14 @@ namespace ChatBot.Prompt
 
                 summaryTasks.Add(getRelatedEmbeddings(sb.ToString(), "CurrentConversationEmbeddingGen"));
             }
+
+            var latestDialogSummaryTask = async () =>
+            {
+                var summary = await _summaryStorage.GetLatestSummary(_userMessageContext.Chat, "Summary", cancellationToken);
+                return summary != null ? new List<Summary> { summary } : new List<Summary>();
+            };
+
+            summaryTasks.Add(latestDialogSummaryTask());
 
             var summaries = (await Task.WhenAll(summaryTasks))
                 .SelectMany(s => s)

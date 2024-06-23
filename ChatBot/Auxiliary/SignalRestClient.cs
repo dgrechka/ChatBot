@@ -23,14 +23,13 @@ namespace ChatBot.Auxiliary
     {
         private readonly SignalSettings _settings;
         private readonly HttpClient _httpClient;
-        private readonly ClientWebSocket _clientWebSocket;
+        private ClientWebSocket? _clientWebSocket = null;
         private readonly ILogger<SignalRestClient>? _logger;
 
         public SignalRestClient(SignalSettings settings, ILogger<SignalRestClient>? logger)
         {
             _settings = settings;
             _httpClient = new HttpClient() { BaseAddress= new Uri(settings.ApiGatewayAddress)};
-            _clientWebSocket = new ClientWebSocket();
             _logger = logger;
         }
 
@@ -42,14 +41,15 @@ namespace ChatBot.Auxiliary
         public async Task ConfirmMessageRead(string recipient, ulong timestamp)
         {
             var payload = new MessageReadConfirmationPayload(recipient, timestamp);
-            var jsonConetent = JsonContent.Create(payload);
-            var res = await _httpClient.PostAsync($"v1/receipts/{_settings.SelfNumber}", jsonConetent);
+            var jsonContent = JsonContent.Create(payload);
+            var res = await _httpClient.PostAsync($"v1/receipts/{_settings.SelfNumber}", jsonContent);
             var content = await res.Content.ReadAsStringAsync();
             res.EnsureSuccessStatusCode();
         }
 
         public async IAsyncEnumerable<IncomingSignalMessage> GetMessages([EnumeratorCancellation]CancellationToken cancellationToken)
         {
+            _clientWebSocket = new ClientWebSocket();
             await _clientWebSocket.ConnectAsync(new Uri(_settings.ApiGatewayAddress.Replace("http","ws")+ "/v1/receive/"+_settings.SelfNumber), cancellationToken);
             _logger?.LogInformation("Connected to Signal API Gateway");
             try
@@ -113,7 +113,7 @@ namespace ChatBot.Auxiliary
         public void Dispose()
         {
             _httpClient.Dispose();
-            _clientWebSocket.Dispose();
+            _clientWebSocket?.Dispose();
         }
     }
 
