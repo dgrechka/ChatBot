@@ -19,4 +19,4 @@ The *information* discussed in the following prior conversations might be releva
 ◄prior-conversations►
 [End of prior conversations section]
 
-Now, please complete the conversation turn with the user.
+Now, please complete a single conversation turn with the user.

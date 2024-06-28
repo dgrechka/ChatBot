@@ -40,6 +40,8 @@ namespace ChatBot.Processing.ScheduledTasks
         /// <returns></returns>
         IAsyncEnumerable<string> GetSummaryIdsSince(string summaryId, string? summaryRecordId, CancellationToken cancellationToken);
 
+        IAsyncEnumerable<Summary> GetSummariesSince(string summaryId, DateTime? time, CancellationToken cancellationToken);
+
         IAsyncEnumerable<Chat> GetChatsWithSummaries(string summaryId, CancellationToken cancellationToken);
 
         Task SaveSummary(Chat chat, string summaryId, DateTime time, string summary, CancellationToken cancellationToken);

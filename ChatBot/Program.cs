@@ -111,6 +111,9 @@ namespace ChatBot
             builder.Services.AddSingleton(settings.Prompts?.Authorization!);
             builder.Services.AddScoped<ITemplateSource, ChatAuthorizationTemplateSourceScoped>();
 
+            builder.Services.AddSingleton<ITemplateSource, VersionTemplateSource>();
+            builder.Services.AddScoped<ITemplateSource, LlmInfoTemplateSourceScoped>();
+
             if(settings.Models == null)
             {
                 logger.LogCritical("Models are not configured");
