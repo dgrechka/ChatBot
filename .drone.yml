@@ -72,6 +72,6 @@ steps:
     - VERSION=0.0.0.${DRONE_BUILD_NUMBER}
 ---
 kind: signature
-hmac: d52fe1cf5e7946701ec8df26e37f100a6f614053c27d2bf456b29db71717684d
+hmac: 1b94eb9048b975b5b5cd085df3b5e99b630bf854aeb1687a4593c03077540084
 
 ...
