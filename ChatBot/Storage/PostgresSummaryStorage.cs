@@ -102,6 +102,42 @@ namespace ChatBot.Storage
             }
         }
 
+        public async IAsyncEnumerable<Summary> GetSummariesSince(string summaryId, DateTime? time, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            await EnsureInitialized(cancellationToken);
+
+            using var connection = _postgres.DataSource.CreateConnection();
+            await connection.OpenAsync(cancellationToken);
+            try
+            {
+                using var command = connection.CreateCommand();
+
+                string timeFilter = string.Empty;
+                if (time != null)
+                {
+                    timeFilter = " AND Timestamp > @Time";
+                    command.Parameters.Add(new Npgsql.NpgsqlParameter("@Time", time.Value));
+                }
+
+                command.CommandText = $@"
+                    SELECT RecordId, ChatId, Timestamp, Summary
+                    FROM Summaries
+                    WHERE SummaryId = @SummaryId {timeFilter}";
+
+                command.Parameters.Add(new Npgsql.NpgsqlParameter("@SummaryId", summaryId));
+
+                using var reader = await command.ExecuteReaderAsync(cancellationToken);
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    yield return new Summary(reader.GetInt32(0).ToString(), reader.GetDateTime(2), reader.GetString(3), new Chat(reader.GetString(1)));
+                }
+            }
+            finally
+            {
+                await connection.CloseAsync();
+            }
+        }
+
         public async IAsyncEnumerable<string> GetSummaryIdsSince(
             string summaryId,
             string? summaryRecordId,

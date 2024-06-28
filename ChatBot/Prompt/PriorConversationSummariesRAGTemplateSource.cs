@@ -111,9 +111,21 @@ namespace ChatBot.Prompt
 
             summaryTasks.Add(latestDialogSummaryTask());
 
+            var recentDaySummariesTask = async () =>
+            {
+                var result = new List<Summary>();
+                await foreach(var summary in _summaryStorage.GetSummariesSince("Summary", DateTime.UtcNow.AddDays(-1), cancellationToken))
+                {
+                    result.Add(summary);
+                }
+                return result;
+            };
+            summaryTasks.Add(recentDaySummariesTask());
+
             var summaries = (await Task.WhenAll(summaryTasks))
                 .SelectMany(s => s)
                 .DistinctBy(s => s.RecordId)
+                .OrderBy(s => s.Time)
                 .Select(s => $"```conversation\n{s.Content}\n```");
 
             return string.Join("\n\n", summaries);
