@@ -53,6 +53,8 @@ steps:
     dockerfile: ChatBot/Dockerfile
     auto_tag: true
     force_tag: true
+    build_args:
+    - VERSION=0.0.0.${DRONE_BUILD_NUMBER}
 - name: build & push docker image (tag)
   image: plugins/docker
   when:
@@ -69,7 +71,7 @@ steps:
     auto_tag: true
     force_tag: true
     build_args:
-    - VERSION=0.0.0.${DRONE_BUILD_NUMBER}
+    - VERSION=${DRONE_TAG}.${DRONE_BUILD_NUMBER}
 ---
 kind: signature
 hmac: 1b94eb9048b975b5b5cd085df3b5e99b630bf854aeb1687a4593c03077540084
